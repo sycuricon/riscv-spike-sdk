@@ -1,0 +1,12 @@
+[submodule "riscv-tools"]
+	path = riscv-tools
+	url = https://github.com/riscv/riscv-tools.git
+[submodule "riscv-gnu-toolchain"]
+	path = riscv-gnu-toolchain
+	url = https://github.com/riscv/riscv-gnu-toolchain.git
+[submodule "buildroot"]
+	path = buildroot
+	url = https://github.com/buildroot/buildroot.git
+[submodule "linux"]
+	path = linux
+	url = git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git
