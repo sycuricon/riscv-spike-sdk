@@ -9,7 +9,7 @@ This SDK follows the newest Linux Kernel, GNU toolchain and Spike, the functions
 |       Folder        |      Description       |    Version    |
 | :-----------------: | :--------------------: | :-----------: |
 |      buildroot      |    Build initramfs     |  2020.02-git  |
-|        linux        |      Linux Kernel      |     5.4.7     |
+|        linux        |      Linux Kernel      |     5.4.8     |
 | riscv-gnu-toolchain | GNU Compiler Toolchain |   gcc 9.2.0   |
 |     riscv-tools     | Simulator & Bootloader | master branch |
 |        conf         |     config for SDK     |               |
@@ -67,12 +67,12 @@ rrrrrrrrrrrrrrrrrrrrrr  rrrrrrrrrrrrrrrrrrrrrr
          
   This SDK is based on SiFive Freedom U SDK.
 					
-				 					Phantom0308
-			 				ICSR, ZheJiang University
+				 Phantom0308
+			 ICSR, ZheJiang University
 
 [    0.000000] OF: fdt: No chosen node found, continuing without
 [    0.000000] OF: fdt: Ignoring memory range 0x80000000 - 0x80200000
-[    0.000000] Linux version 5.4.7 (phantom0308@Pavilion) (gcc version 9.2.0 (GCC)) #1 SMP Thu Jan 2 18:22:46 CST 2020
+[    0.000000] Linux version 5.4.8 (phantom0308@Pavilion) (gcc version 9.2.0 (GCC)) #1 SMP Sun Jan 5 21:59:34 CST 2020
 [    0.000000] initrd not found or empty - disabling initrd
 [    0.000000] Zone ranges:
 [    0.000000]   DMA32    [mem 0x0000000080200000-0x00000000ffffffff]
@@ -90,7 +90,7 @@ rrrrrrrrrrrrrrrrrrrrrr  rrrrrrrrrrrrrrrrrrrrrr
 [    0.000000] Inode-cache hash table entries: 131072 (order: 8, 1048576 bytes, linear)
 [    0.000000] Sorting __ex_table...
 [    0.000000] mem auto-init: stack:off, heap alloc:off, heap free:off
-[    0.000000] Memory: 1987076K/2095104K available (3327K kernel code, 235K rwdata, 866K rodata, 5439K init, 247K bss, 108028K reserved, 0K cma-reserved)
+[    0.000000] Memory: 1987072K/2095104K available (3329K kernel code, 234K rwdata, 866K rodata, 5439K init, 247K bss, 108032K reserved, 0K cma-reserved)
 [    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
 [    0.000000] rcu: Hierarchical RCU implementation.
 [    0.000000] rcu: 	RCU event tracing is enabled.
@@ -106,62 +106,71 @@ rrrrrrrrrrrrrrrrrrrrrr  rrrrrrrrrrrrrrrrrrrrrr
 [    0.012000] pid_max: default: 32768 minimum: 301
 [    0.012350] Mount-cache hash table entries: 4096 (order: 3, 32768 bytes, linear)
 [    0.012785] Mountpoint-cache hash table entries: 4096 (order: 3, 32768 bytes, linear)
-[    0.013970] rcu: Hierarchical SRCU implementation.
-[    0.014480] smp: Bringing up secondary CPUs ...
-[    0.016060] smp: Brought up 1 node, 4 CPUs
-[    0.016605] devtmpfs: initialized
-[    0.017260] random: get_random_bytes called from setup_net+0x38/0x186 with crng_init=0
-[    0.017755] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 19112604462750000 ns
-[    0.018325] futex hash table entries: 1024 (order: 4, 65536 bytes, linear)
-[    0.018925] NET: Registered protocol family 16
-[    0.021955] vgaarb: loaded
-[    0.022245] SCSI subsystem initialized
-[    0.022680] usbcore: registered new interface driver usbfs
-[    0.023015] usbcore: registered new interface driver hub
-[    0.023405] usbcore: registered new device driver usb
-[    0.023730] pps_core: LinuxPPS API ver. 1 registered
-[    0.024020] pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
-[    0.024555] PTP clock support registered
-[    0.025140] clocksource: Switched to clocksource riscv_clocksource
-[    0.026360] NET: Registered protocol family 2
-[    0.026895] tcp_listen_portaddr_hash hash table entries: 1024 (order: 2, 16384 bytes, linear)
-[    0.027405] TCP established hash table entries: 16384 (order: 5, 131072 bytes, linear)
-[    0.028050] TCP bind hash table entries: 16384 (order: 6, 262144 bytes, linear)
-[    0.028670] TCP: Hash tables configured (established 16384 bind 16384)
-[    0.029085] UDP hash table entries: 1024 (order: 3, 32768 bytes, linear)
-[    0.029505] UDP-Lite hash table entries: 1024 (order: 3, 32768 bytes, linear)
-[    0.029995] NET: Registered protocol family 1
-[    0.030305] PCI: CLS 0 bytes, default 64
-[    0.045590] workingset: timestamp_bits=62 max_order=19 bucket_order=0
-[    0.050095] io scheduler mq-deadline registered
-[    0.050360] io scheduler kyber registered
-[    0.091405] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
-[    0.092615] libphy: Fixed MDIO Bus: probed
-[    0.092970] ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
-[    0.093350] ehci-pci: EHCI PCI platform driver
-[    0.093650] usbcore: registered new interface driver usb-storage
-[    0.094140] usbcore: registered new interface driver usbhid
-[    0.094465] usbhid: USB HID core driver
-[    0.094815] NET: Registered protocol family 17
-[    0.096580] Freeing unused kernel memory: 5436K
-[    0.096845] This architecture does not have kernel memory protection.
-[    0.097220] Run /init as init process
+[    0.013980] rcu: Hierarchical SRCU implementation.
+[    0.014490] smp: Bringing up secondary CPUs ...
+[    0.016070] smp: Brought up 1 node, 4 CPUs
+[    0.016615] devtmpfs: initialized
+[    0.017270] random: get_random_bytes called from setup_net+0x38/0x186 with crng_init=0
+[    0.017765] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 19112604462750000 ns
+[    0.018335] futex hash table entries: 1024 (order: 4, 65536 bytes, linear)
+[    0.018935] NET: Registered protocol family 16
+[    0.021965] vgaarb: loaded
+[    0.022255] SCSI subsystem initialized
+[    0.022690] usbcore: registered new interface driver usbfs
+[    0.023025] usbcore: registered new interface driver hub
+[    0.023415] usbcore: registered new device driver usb
+[    0.023740] pps_core: LinuxPPS API ver. 1 registered
+[    0.024030] pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+[    0.024565] PTP clock support registered
+[    0.025150] clocksource: Switched to clocksource riscv_clocksource
+[    0.026370] NET: Registered protocol family 2
+[    0.026905] tcp_listen_portaddr_hash hash table entries: 1024 (order: 2, 16384 bytes, linear)
+[    0.027415] TCP established hash table entries: 16384 (order: 5, 131072 bytes, linear)
+[    0.028060] TCP bind hash table entries: 16384 (order: 6, 262144 bytes, linear)
+[    0.028680] TCP: Hash tables configured (established 16384 bind 16384)
+[    0.029095] UDP hash table entries: 1024 (order: 3, 32768 bytes, linear)
+[    0.029515] UDP-Lite hash table entries: 1024 (order: 3, 32768 bytes, linear)
+[    0.030005] NET: Registered protocol family 1
+[    0.030315] PCI: CLS 0 bytes, default 64
+[    0.045100] workingset: timestamp_bits=62 max_order=19 bucket_order=0
+[    0.049650] io scheduler mq-deadline registered
+[    0.049915] io scheduler kyber registered
+[    0.090900] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+[    0.092110] libphy: Fixed MDIO Bus: probed
+[    0.092465] ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+[    0.092845] ehci-pci: EHCI PCI platform driver
+[    0.093145] usbcore: registered new interface driver usb-storage
+[    0.093635] usbcore: registered new interface driver usbhid
+[    0.093960] usbhid: USB HID core driver
+[    0.094310] NET: Registered protocol family 17
+[    0.096070] Freeing unused kernel memory: 5436K
+[    0.096335] This architecture does not have kernel memory protection.
+[    0.096710] Run /init as init process
 Starting syslogd: OK
 Starting klogd: OK
 Running sysctl: OK
 Starting mdev... OK
 modprobe: can't change directory to '/lib/modules': No such file or directory
-Saving random seed: [    0.387715] random: dd: uninitialized urandom read (512 bytes read)
+Saving random seed: [    0.382350] random: dd: uninitialized urandom read (512 bytes read)
 OK
 Starting network: OK
 
 Welcome to Buildroot
 buildroot login: root
+root
 Password: phantom
+
+# cd /
+cd /
+# ls
+ls
+bin      init     linuxrc  opt      run      tmp
+dev      lib      media    proc     sbin     usr
+etc      lib64    mnt      root     sys      var
 # poweroff
 poweroff
 # Stopping network: OK
-Saving random seed: [ 4101.202160] random: dd: uninitialized urandom read (512 bytes read)
+Saving random seed: [  571.142295] random: dd: uninitialized urandom read (512 bytes read)
 OK
 Stopping mdev... stopped process in pidfile '/var/run/mdev.pid' (pid 67)
 OK
@@ -172,6 +181,8 @@ The system is going down NOW!
 Sent SIGTERM to all processes
 Sent SIGKILL to all processes
 Requesting system poweroff
-[ 4103.255305] reboot: Power down
+[  573.195315] reboot: Power down
 ```
-Finally, if you have any suggestions for this SDK, please *push* it!
+
+
+Finally, if you have any suggestions for this SDK, please *push* it !
