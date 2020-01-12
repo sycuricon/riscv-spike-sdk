@@ -35,8 +35,8 @@ There're some config you need to notice:
 	CONFIG_HVC_RISCV_SBI=y
 	CONFIG_VT_CONSOLE=n
 	```
-3. Spike
-The default account and password is root@phantom, following is the terminal log on Linux 5.4.7.
+3. Spike  
+The default account and password is root@phantom, following is the terminal log on Linux 5.4.8.
 ```
 bbl loader
 
