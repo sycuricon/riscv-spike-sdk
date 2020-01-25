@@ -130,8 +130,18 @@ $(bbl): $(pk_srcdir) $(vmlinux_stripped)
 		--host=$(target_linux) \
 		--with-payload=$(vmlinux_stripped) \
 		--enable-logo \
-		--with-logo=$(abspath conf/logo.txt)
+		--with-logo=$(abspath conf/logo.txt) 
 	CFLAGS="-mabi=$(ABI) -march=$(ISA)" $(MAKE) -C $(pk_wrkdir)
+
+
+$(pk): $(pk_srcdir) $(RISCV)/bin/$(target_newlib)-gcc
+	rm -rf $(pk_wrkdir)
+	mkdir -p $(pk_wrkdir)
+	cd $(pk_wrkdir) && $</configure \
+		--host=$(target_newlib) \
+		--prefix=$(abspath $(toolchain_dest))
+	CFLAGS="-mabi=$(ABI) -march=$(ISA)" $(MAKE) -C $(pk_wrkdir)
+	$(MAKE) -C $(pk_wrkdir) install
 
 $(spike): $(spike_srcdir) 
 	rm -rf $(spike_wrkdir)
@@ -155,3 +165,5 @@ clean:
 .PHONY: sim
 sim: $(bbl) $(spike)
 	$(spike) --isa=$(ISA) -p4 $(bbl)
+
+
