@@ -26,14 +26,13 @@ Build dependencies on Ubuntu 16.04/18.04:
 $ sudo apt-get install device-tree-compiler autoconf automake autotools-dev    \
 curl libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo \
 gperf libtool patchutils bc zlib1g-dev libexpat-dev
-```
-```bash
-git clone https://github.com/Phantom1003/riscv-rss-sdk.git
-git submodule update --init --recursive --progress
+
+$ git clone https://github.com/Phantom1003/riscv-rss-sdk.git
+$ git submodule update --init --recursive --progress
 #	NOTICE: 
 # 		If you already have a riscv toolchain, please notice ** DO NOT SET
 #		 $RISCV and MAKE SURE NO ORIGIN RISCV TOOLCHAIN IN YOUR $PATH **
-make
+$ make
 ```
 
 ## Software Development
