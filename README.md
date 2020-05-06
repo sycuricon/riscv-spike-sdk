@@ -2,7 +2,7 @@
 
 # RISC-V Spike Simulator SDK
 
-In the recent version of the riscv-tools and freedom-u-sdk, both of them removed the support of the spike simulator, and tutorials about running Linux on spike is using static compiled busybox, which is not suitable for real test environments. Spike is the simplest simulator of RISC-V, it has a very clear description of the instructions, you can apply your ideas and check it for a quick try. The **R**ISC-V **S**pike **S**imulator SDK wants to help people to test design on Spike with real 64-bit Linux environment easily, the basic framework is based on Freedom U SDK version 1.0.
+In the recent version of the riscv-tools and freedom-u-sdk, both of them removed the support of the spike simulator, and tutorials about running Linux on spike is using static compiled busybox, which is not suitable for real test environments. Spike is the simplest simulator of RISC-V, it has a very clear description of the instructions, you can apply your ideas and check it for a quick try. The **R**ISC-V **S**pike **S**imulator SDK wants to help people to test design with 64-bit Linux environment on Spike easily, the basic framework is based on Freedom U SDK version 1.0.
 
 This SDK will provide great convenience for the following people who:
 
@@ -14,10 +14,10 @@ This SDK follows the newest Linux Kernel, GNU toolchain and Spike, the functions
 
 |       Folder        |      Description       |   Version   |
 | :-----------------: | :--------------------: | :---------: |
-|      buildroot      |    Build initramfs     | 2020.02-git |
-|        linux        |      Linux Kernel      |   5.4.14    |
+|      buildroot      |    Build initramfs     |  2020.02.x  |
+|        linux        |      Linux Kernel      |    5.6.10   |
 | riscv-gnu-toolchain | GNU Compiler Toolchain |  gcc 9.2.0  |
-|     riscv-tools     | Simulator & Bootloader |   master    |
+|     riscv-tools     | Simulator & Bootloader |    master   |
 |        conf         |     config for SDK     |             |
 
 ## Quickstart
@@ -26,13 +26,14 @@ Build dependencies on Ubuntu 16.04/18.04:
 $ sudo apt-get install device-tree-compiler autoconf automake autotools-dev    \
 curl libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo \
 gperf libtool patchutils bc zlib1g-dev libexpat-dev
-
-$ git clone https://github.com/Phantom1003/riscv-rss-sdk.git
-$ git submodule update --init --recursive --progress
+```
+```bash
+git clone https://github.com/Phantom1003/riscv-rss-sdk.git
+git submodule update --init --recursive --progress
 #	NOTICE: 
 # 		If you already have a riscv toolchain, please notice ** DO NOT SET
 #		 $RISCV and MAKE SURE NO ORIGIN RISCV TOOLCHAIN IN YOUR $PATH **
-$ make
+make
 ```
 
 ## Software Development
