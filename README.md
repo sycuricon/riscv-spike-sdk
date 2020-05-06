@@ -2,7 +2,7 @@
 
 # RISC-V Spike Simulator SDK
 
-In the recent version of the riscv-tools and freedom-u-sdk, both of them removed the support of the spike simulator, and tutorials about running Linux on spike is using static compiled busybox, which is not suitable for real test environments. Spike is the simplest simulator of RISC-V, it has a very clear description of the instructions, you can apply your ideas and check it for a quick try. The **R**ISC-V **S**pike **S**imulator SDK wants to help people to test design on Spike with real 64-bit Linux environment easily, the basic framework is based on Freedom U SDK version 1.0.
+In the recent version of the riscv-tools and freedom-u-sdk, both of them removed the support of the spike simulator, and tutorials about running Linux on spike is using static compiled busybox, which is not suitable for real test environments. Spike is the simplest simulator of RISC-V, it has a very clear description of the instructions, you can apply your ideas and check it for a quick try. The **R**ISC-V **S**pike **S**imulator SDK wants to help people to test design with 64-bit Linux environment on Spike easily, the basic framework is based on Freedom U SDK version 1.0.
 
 This SDK will provide great convenience for the following people who:
 
@@ -14,10 +14,10 @@ This SDK follows the newest Linux Kernel, GNU toolchain and Spike, the functions
 
 |       Folder        |      Description       |   Version   |
 | :-----------------: | :--------------------: | :---------: |
-|      buildroot      |    Build initramfs     | 2020.02-git |
-|        linux        |      Linux Kernel      |   5.4.14    |
+|      buildroot      |    Build initramfs     |  2020.02.x  |
+|        linux        |      Linux Kernel      |    5.6.10   |
 | riscv-gnu-toolchain | GNU Compiler Toolchain |  gcc 9.2.0  |
-|     riscv-tools     | Simulator & Bootloader |   master    |
+|     riscv-tools     | Simulator & Bootloader |    master   |
 |        conf         |     config for SDK     |             |
 
 ## Quickstart
@@ -26,13 +26,14 @@ Build dependencies on Ubuntu 16.04/18.04:
 $ sudo apt-get install device-tree-compiler autoconf automake autotools-dev    \
 curl libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo \
 gperf libtool patchutils bc zlib1g-dev libexpat-dev
-
-$ git clone https://github.com/Phantom1003/riscv-rss-sdk.git
-$ git submodule update --init --recursive --progress
+```
+```bash
+git clone https://github.com/Phantom1003/riscv-rss-sdk.git
+git submodule update --init --recursive --progress
 #	NOTICE: 
 # 		If you already have a riscv toolchain, please notice ** DO NOT SET
 #		 $RISCV and MAKE SURE NO ORIGIN RISCV TOOLCHAIN IN YOUR $PATH **
-$ make
+make
 ```
 
 ## Software Development
@@ -57,7 +58,7 @@ Same to linux, if you want to add driver for new devices, `make buildroot-menuco
    Using `buildroot` to help you to build a rootfs, you can add config in `conf/buildroot_initramfs_config` to add package, and you can copy your pre-compiled elf in `work/initramfs_sysroot` to access in Spike.
    And remember, the basic idea of this SDK is to deconfig all the device, because spike is very limited support for devices, specically the Ethernet, so you should not open DHCP.
 
-3. compile Linux  
+3. Compile Linux  
    There're some config you need to notice, if you have no output:
 
 ```
@@ -65,41 +66,16 @@ CONFIG_HVC_RISCV_SBI=y
 CONFIG_VT_CONSOLE=n
 ```
 
-4. Spike
+4. Spike  
    The default account and password is root@phantom, following is the terminal log on Linux 5.4.8.
 
 ```basj
 bbl loader
 
-          RISC-V Spike Simulator SDK
-                    
-              vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-                  vvvvvvvvvvvvvvvvvvvvvvvvvvvv
-rrrrrrrrrrrrr       vvvvvvvvvvvvvvvvvvvvvvvvvv
-rrrrrrrrrrrrrrrr      vvvvvvvvvvvvvvvvvvvvvvvv
-rrrrrrrrrrrrrrrrrr    vvvvvvvvvvvvvvvvvvvvvvvv
-rrrrrrrrrrrrrrrrrr    vvvvvvvvvvvvvvvvvvvvvvvv
-rrrrrrrrrrrrrrrrrr    vvvvvvvvvvvvvvvvvvvvvvvv
-rrrrrrrrrrrrrrrr      vvvvvvvvvvvvvvvvvvvvvv  
-rrrrrrrrrrrrr       vvvvvvvvvvvvvvvvvvvvvv    
-rr                vvvvvvvvvvvvvvvvvvvvvv      
-rr            vvvvvvvvvvvvvvvvvvvvvvvv      rr
-rrrr      vvvvvvvvvvvvvvvvvvvvvvvvvv      rrrr
-rrrrrr      vvvvvvvvvvvvvvvvvvvvvv      rrrrrr
-rrrrrrrr      vvvvvvvvvvvvvvvvvv      rrrrrrrr
-rrrrrrrrrr      vvvvvvvvvvvvvv      rrrrrrrrrr
-rrrrrrrrrrrr      vvvvvvvvvv      rrrrrrrrrrrr
-rrrrrrrrrrrrrr      vvvvvv      rrrrrrrrrrrrrr
-rrrrrrrrrrrrrrrr      vv      rrrrrrrrrrrrrrrr
-rrrrrrrrrrrrrrrrrr          rrrrrrrrrrrrrrrrrr
-rrrrrrrrrrrrrrrrrrrr      rrrrrrrrrrrrrrrrrrrr
-rrrrrrrrrrrrrrrrrrrrrr  rrrrrrrrrrrrrrrrrrrrrr        
-                                                         
-         
+          RISC-V Spike Simulator SDK 
+
   This SDK is based on SiFive Freedom U SDK.
 					
-				 Phantom0308
-			 ICSR, ZheJiang University
 
 [    0.000000] OF: fdt: No chosen node found, continuing without
 [    0.000000] OF: fdt: Ignoring memory range 0x80000000 - 0x80200000
