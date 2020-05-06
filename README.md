@@ -58,7 +58,7 @@ Same to linux, if you want to add driver for new devices, `make buildroot-menuco
    Using `buildroot` to help you to build a rootfs, you can add config in `conf/buildroot_initramfs_config` to add package, and you can copy your pre-compiled elf in `work/initramfs_sysroot` to access in Spike.
    And remember, the basic idea of this SDK is to deconfig all the device, because spike is very limited support for devices, specically the Ethernet, so you should not open DHCP.
 
-3. compile Linux  
+3. Compile Linux  
    There're some config you need to notice, if you have no output:
 
 ```
@@ -66,41 +66,16 @@ CONFIG_HVC_RISCV_SBI=y
 CONFIG_VT_CONSOLE=n
 ```
 
-4. Spike
+4. Spike  
    The default account and password is root@phantom, following is the terminal log on Linux 5.4.8.
 
 ```basj
 bbl loader
 
-          RISC-V Spike Simulator SDK
-                    
-              vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-                  vvvvvvvvvvvvvvvvvvvvvvvvvvvv
-rrrrrrrrrrrrr       vvvvvvvvvvvvvvvvvvvvvvvvvv
-rrrrrrrrrrrrrrrr      vvvvvvvvvvvvvvvvvvvvvvvv
-rrrrrrrrrrrrrrrrrr    vvvvvvvvvvvvvvvvvvvvvvvv
-rrrrrrrrrrrrrrrrrr    vvvvvvvvvvvvvvvvvvvvvvvv
-rrrrrrrrrrrrrrrrrr    vvvvvvvvvvvvvvvvvvvvvvvv
-rrrrrrrrrrrrrrrr      vvvvvvvvvvvvvvvvvvvvvv  
-rrrrrrrrrrrrr       vvvvvvvvvvvvvvvvvvvvvv    
-rr                vvvvvvvvvvvvvvvvvvvvvv      
-rr            vvvvvvvvvvvvvvvvvvvvvvvv      rr
-rrrr      vvvvvvvvvvvvvvvvvvvvvvvvvv      rrrr
-rrrrrr      vvvvvvvvvvvvvvvvvvvvvv      rrrrrr
-rrrrrrrr      vvvvvvvvvvvvvvvvvv      rrrrrrrr
-rrrrrrrrrr      vvvvvvvvvvvvvv      rrrrrrrrrr
-rrrrrrrrrrrr      vvvvvvvvvv      rrrrrrrrrrrr
-rrrrrrrrrrrrrr      vvvvvv      rrrrrrrrrrrrrr
-rrrrrrrrrrrrrrrr      vv      rrrrrrrrrrrrrrrr
-rrrrrrrrrrrrrrrrrr          rrrrrrrrrrrrrrrrrr
-rrrrrrrrrrrrrrrrrrrr      rrrrrrrrrrrrrrrrrrrr
-rrrrrrrrrrrrrrrrrrrrrr  rrrrrrrrrrrrrrrrrrrrrr        
-                                                         
-         
+          RISC-V Spike Simulator SDK 
+
   This SDK is based on SiFive Freedom U SDK.
 					
-				 Phantom0308
-			 ICSR, ZheJiang University
 
 [    0.000000] OF: fdt: No chosen node found, continuing without
 [    0.000000] OF: fdt: Ignoring memory range 0x80000000 - 0x80200000

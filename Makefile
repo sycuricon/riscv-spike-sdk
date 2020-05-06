@@ -1,7 +1,8 @@
 # RISCV should either be unset, or set to point to a directory that contains
 # a toolchain install tree that was built via other means.
 RISCV ?= $(CURDIR)/toolchain
-PATH := $(RISCV)/bin:$(PATH)
+LLVM ?= /home/phantom/llvm/install
+PATH := $(LLVM)/bin:$(RISCV)/bin:$(PATH)
 ISA ?= rv64imafdc
 ABI ?= lp64d
 
@@ -37,6 +38,10 @@ spike_srcdir := $(srcdir)/riscv-tools/riscv-isa-sim
 spike_wrkdir := $(wrkdir)/riscv-isa-sim
 spike := $(toolchain_dest)/bin/spike
 
+qemu_srcdir := $(srcdir)/riscv-gnu-toolchain/qemu
+qemu_wrkdir := $(wrkdir)/qemu
+qemu := $(qemu_wrkdir)/prefix/bin/qemu-system-riscv64
+
 target_linux  := riscv64-unknown-linux-gnu
 target_newlib := riscv64-unknown-elf
 
@@ -53,13 +58,13 @@ endif
 
 $(toolchain_dest)/bin/$(target_linux)-gcc: $(toolchain_srcdir)
 	mkdir -p $(toolchain_wrkdir)
-	$(MAKE) -C $(linux_srcdir) O=$(dir $<) ARCH=riscv INSTALL_HDR_PATH=$(abspath $(toolchain_srcdir)/linux-headers) headers_install
+	$(MAKE) -C $(linux_srcdir) O=$(toolchain_wrkdir) ARCH=riscv INSTALL_HDR_PATH=$(abspath $(toolchain_srcdir)/linux-headers) headers_install
 	cd $(toolchain_wrkdir); $(toolchain_srcdir)/configure \
 		--prefix=$(toolchain_dest) \
 		--with-arch=$(ISA) \
 		--with-abi=$(ABI) 
 	$(MAKE) -C $(toolchain_wrkdir) linux
-	sed 's/^#define LINUX_VERSION_CODE.*/#define LINUX_VERSION_CODE 327680/' -i $(toolchain_dest)/sysroot/usr/include/linux/version.h
+	# sed 's/^#define LINUX_VERSION_CODE.*/#define LINUX_VERSION_CODE 329226/' -i $(toolchain_dest)/sysroot/usr/include/linux/version.h
 
 $(toolchain_dest)/bin/$(target_newlib)-gcc: $(toolchain_srcdir)
 	mkdir -p $(toolchain_wrkdir)
@@ -111,6 +116,7 @@ $(vmlinux): $(linux_srcdir) $(linux_wrkdir)/.config $(buildroot_initramfs_sysroo
 		CONFIG_INITRAMFS_ROOT_GID=$(shell id -g) \
 		CROSS_COMPILE=riscv64-unknown-linux-gnu- \
 		ARCH=riscv \
+		CC=clang \
 		vmlinux
 
 $(vmlinux_stripped): $(vmlinux)
@@ -153,6 +159,18 @@ $(spike): $(spike_srcdir)
 	$(MAKE) -C $(spike_wrkdir) install
 	touch -c $@
 
+$(qemu): $(qemu_srcdir)
+	rm -rf $(qemu_wrkdir)
+	mkdir -p $(qemu_wrkdir)
+	mkdir -p $(dir $@)
+	cd $(qemu_wrkdir) && $</configure \
+		--prefix=$(dir $(abspath $(dir $@))) \
+		--target-list=riscv64-softmmu
+	$(MAKE) -C $(qemu_wrkdir)
+	$(MAKE) -C $(qemu_wrkdir) install
+	touch -c $@
+
+
 .PHONY: buildroot_initramfs_sysroot vmlinux bbl
 buildroot_initramfs_sysroot: $(buildroot_initramfs_sysroot)
 vmlinux: $(vmlinux)
@@ -165,5 +183,10 @@ clean:
 .PHONY: sim
 sim: $(bbl) $(spike)
 	$(spike) --isa=$(ISA) -p4 $(bbl)
+
+.PHONY: qemu
+qemu: $(qemu) $(bbl) 
+	$(qemu) -nographic -machine virt -kernel $(bbl) \
+		-netdev user,id=net0 -device virtio-net-device,netdev=net0
 
 
