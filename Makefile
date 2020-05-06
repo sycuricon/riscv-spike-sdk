@@ -1,8 +1,7 @@
 # RISCV should either be unset, or set to point to a directory that contains
 # a toolchain install tree that was built via other means.
 RISCV ?= $(CURDIR)/toolchain
-LLVM ?= /home/phantom/llvm/install
-PATH := $(LLVM)/bin:$(RISCV)/bin:$(PATH)
+PATH := $(RISCV)/bin:$(PATH)
 ISA ?= rv64imafdc
 ABI ?= lp64d
 
@@ -116,7 +115,6 @@ $(vmlinux): $(linux_srcdir) $(linux_wrkdir)/.config $(buildroot_initramfs_sysroo
 		CONFIG_INITRAMFS_ROOT_GID=$(shell id -g) \
 		CROSS_COMPILE=riscv64-unknown-linux-gnu- \
 		ARCH=riscv \
-		CC=clang \
 		vmlinux
 
 $(vmlinux_stripped): $(vmlinux)
