@@ -1,31 +1,16 @@
 
-          RISC-V Spike Simulator SDK
-                    
-              vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-                  vvvvvvvvvvvvvvvvvvvvvvvvvvvv
-rrrrrrrrrrrrr       vvvvvvvvvvvvvvvvvvvvvvvvvv
-rrrrrrrrrrrrrrrr      vvvvvvvvvvvvvvvvvvvvvvvv
-rrrrrrrrrrrrrrrrrr    vvvvvvvvvvvvvvvvvvvvvvvv
-rrrr Linux rrrrrrr    vvvvvvvvvvvvvvvvvvvvvvvv
-rrrrrrrrrrrrrrrrrr    vvvvvvvvvvvvvvvvvvvvvvvv
-rrrrrrrrrrrrrrrr      vvvvvvvvvvvvvvvvvvvvvv  
-rrrrrrrrrrrrr       vvvvvvvvvvvvvvvvvvvvvv    
-rr                vvvvvvvvvvvvvvvvvvvvvv      
-rr            vvvvvvvvvvvvvvvvvvvvvvvv      rr
-rrrr      vvvvvvvvvvvvvvvvvvvvvvvvvv      rrrr
-rrrrrr      vvvvvvvvvvvvvvvvvvvvvv      rrrrrr
-rrrrrrrr      vvvvvvvvvvvvvvvvvv      rrrrrrrr
-rrrrrrrrrr      vvvvvvvvvvvvvv      rrrrrrrrrr
-rrrrrrrrrrrr      vvvvvvvvvv      rrrrrrrrrrrr
-rrrrrrrrrrrrrr      vvvvvv      rrrrrrrrrrrrrr
-rrrrrrrrrrrrrrrr      vv      rrrrrrrrrrrrrrrr
-rrrrrrrrrrrrrrrrrr          rrrrrrrrrrrrrrrrrr
-rrrrrrrrrrrrrrrrrrrr      rrrrrrrrrrrrrrrrrrrr
-rrrrrrrrrrrrrrrrrrrrrr  rrrrrrrrrrrrrrrrrrrrrr        
-                                                         
-         
-  This SDK is based on SiFive Freedom U SDK.
-					
-				 Phantom0308
-			 ICSR, ZheJiang University
-
+		  RISC-V Spike Simulator SDK
+	  This SDK is based on SiFive Freedom U SDK.                    
+	      ___           ___           ___     
+	     /\  \         /\  \         /\  \    
+	    /  \  \       /  \  \       /  \  \   
+	   / /\ \  \     / /\ \  \     / /\ \  \  
+	  /  \~\ \  \   _\ \~\ \  \   _\ \~\ \  \ 
+	 / /\ \ \ \__\ /\ \ \ \ \__\ /\ \ \ \ \__\
+	 \/_|  \/ /  / \ \ \ \ \/__/ \ \ \ \ \/__/
+	    | |  /  /   \ \ \ \__\    \ \ \ \__\  
+	    | |\/__/     \ \/ /  /     \ \/ /  /  
+	    | |  |        \  /  /       \  /  /   
+	     \|__|         \/__/         \/__/ 
+     
+     
