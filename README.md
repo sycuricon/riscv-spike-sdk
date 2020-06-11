@@ -14,8 +14,8 @@ This SDK follows the newest Linux Kernel, GNU toolchain and Spike, the functions
 
 |       Folder        |      Description       |   Version   |
 | :-----------------: | :--------------------: | :---------: |
-|      buildroot      |    Build initramfs     |  2020.02.x  |
-|        linux        |      Linux Kernel      |    5.6.10   |
+|      buildroot      |    Build initramfs     |  2020.05.x  |
+|        linux        |      Linux Kernel      |    5.7.2    |
 | riscv-gnu-toolchain | GNU Compiler Toolchain |  gcc 9.2.0  |
 |     riscv-tools     | Simulator & Bootloader |    master   |
 |        conf         |     config for SDK     |             |
