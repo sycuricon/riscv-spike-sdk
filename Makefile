@@ -114,7 +114,7 @@ $(vmlinux): $(linux_srcdir) $(linux_wrkdir)/.config $(buildroot_initramfs_sysroo
 		CONFIG_INITRAMFS_ROOT_UID=$(shell id -u) \
 		CONFIG_INITRAMFS_ROOT_GID=$(shell id -g) \
 		CROSS_COMPILE=riscv64-unknown-linux-gnu- \
-		ARCH=riscv \
+		ARCH=riscv V=1 \
 		vmlinux
 
 $(vmlinux_stripped): $(vmlinux)
@@ -163,7 +163,7 @@ $(qemu): $(qemu_srcdir)
 	mkdir -p $(dir $@)
 	cd $(qemu_wrkdir) && $</configure \
 		--prefix=$(dir $(abspath $(dir $@))) \
-		--target-list=riscv64-softmmu
+		--target-list=riscv64-linux-user,riscv64-softmmu
 	$(MAKE) -C $(qemu_wrkdir)
 	$(MAKE) -C $(qemu_wrkdir) install
 	touch -c $@
