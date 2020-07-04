@@ -14,8 +14,8 @@ This SDK follows the newest Linux Kernel, GNU toolchain and Spike, the functions
 
 |       Folder        |      Description       |   Version   |
 | :-----------------: | :--------------------: | :---------: |
-|      buildroot      |    Build initramfs     |  2020.02.x  |
-|        linux        |      Linux Kernel      |    5.6.10   |
+|      buildroot      |    Build initramfs     |  2020.05.x  |
+|        linux        |      Linux Kernel      |    5.7.2    |
 | riscv-gnu-toolchain | GNU Compiler Toolchain |  gcc 9.2.0  |
 |     riscv-tools     | Simulator & Bootloader |    master   |
 |        conf         |     config for SDK     |             |
@@ -25,7 +25,7 @@ Build dependencies on Ubuntu 16.04/18.04:
 ```bash
 $ sudo apt-get install device-tree-compiler autoconf automake autotools-dev    \
 curl libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo \
-gperf libtool patchutils bc zlib1g-dev libexpat-dev
+gperf libtool patchutils bc zlib1g-dev libexpat-dev python-dev python3-dev
 ```
 ```bash
 git clone https://github.com/Phantom1003/riscv-rss-sdk.git
