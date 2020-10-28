@@ -28,12 +28,12 @@ linux_defconfig := $(confdir)/linux_defconfig
 vmlinux := $(linux_wrkdir)/vmlinux
 vmlinux_stripped := $(linux_wrkdir)/vmlinux-stripped
 
-pk_srcdir := $(srcdir)/riscv-tools/riscv-pk
+pk_srcdir := $(srcdir)/riscv-pk
 pk_wrkdir := $(wrkdir)/riscv-pk
 bbl := $(pk_wrkdir)/bbl
 pk  := $(pk_wrkdir)/pk
 
-spike_srcdir := $(srcdir)/riscv-tools/riscv-isa-sim
+spike_srcdir := $(srcdir)/riscv-isa-sim
 spike_wrkdir := $(wrkdir)/riscv-isa-sim
 spike := $(toolchain_dest)/bin/spike
 
@@ -119,7 +119,6 @@ $(vmlinux): $(linux_srcdir) $(linux_wrkdir)/.config $(buildroot_initramfs_sysroo
 
 $(vmlinux_stripped): $(vmlinux)
 	$(target_linux)-strip -o $@ $<
-	
 
 .PHONY: linux-menuconfig
 linux-menuconfig: $(linux_wrkdir)/.config
