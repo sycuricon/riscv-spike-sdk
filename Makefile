@@ -5,6 +5,9 @@ PATH := $(RISCV)/bin:$(PATH)
 ISA ?= rv64imafdc
 ABI ?= lp64d
 
+LINUX_VER ?= 5.8.1
+LINUX_MIRROR ?= https://mirrors.edge.kernel.org/pub/linux/kernel/v5.x/linux-$(LINUX_VER).tar.gz
+
 srcdir := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 srcdir := $(srcdir:/=)
 confdir := $(srcdir)/conf
@@ -55,7 +58,11 @@ $(RISCV)/bin/$(target_linux)-gcc:
 	$(error The RISCV environment variable was set, but is not pointing at a toolchain install tree)
 endif
 
-$(toolchain_dest)/bin/$(target_linux)-gcc: $(toolchain_srcdir)
+$(linux_srcdir):
+	curl $(LINUX_MIRROR) | tar zxf -
+	mv linux-$(LINUX_VER) linux
+
+$(toolchain_dest)/bin/$(target_linux)-gcc: $(linux_srcdir) $(toolchain_srcdir)
 	mkdir -p $(toolchain_wrkdir)
 	$(MAKE) -C $(linux_srcdir) O=$(toolchain_wrkdir) ARCH=riscv INSTALL_HDR_PATH=$(abspath $(toolchain_srcdir)/linux-headers) headers_install
 	cd $(toolchain_wrkdir); $(toolchain_srcdir)/configure \
