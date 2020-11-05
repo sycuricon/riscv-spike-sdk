@@ -44,9 +44,9 @@ The main compile process will run vmlinux on spike directly, to add your test pr
 
 ​	**NOTICE**: The test program should use Linux cross-compiler to compile , instead of Newlib cross-compiler.
 
-If the benchmark you choose need some package, you can use `make buildroot-menuconfig` to reconfigure buildroot and `touch buildroot && make` to rebuild. 
+If the benchmark you choose need some package, you can use `make buildroot_initramfs-menuconfig` to reconfigure buildroot and `touch buildroot && make` to rebuild. 
 
-Same to linux, if you want to add driver for new devices, `make buildroot-menuconfig` to reconfigure, `touch linux && make` to rebuild.
+Same to linux, if you want to add driver for new devices, `make linux-menuconfig` to reconfigure, `touch linux && make` to rebuild.
 
 ## If you want to build step by step ...
 
