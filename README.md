@@ -14,22 +14,27 @@ This SDK follows the newest Linux Kernel, GNU toolchain and Spike, the functions
 
 |       Folder        |      Description       |   Version   |
 | :-----------------: | :--------------------: | :---------: |
-|      buildroot      |    Build initramfs     |  2020.05.x  |
-|        linux        |      Linux Kernel      |    5.8.0    |
-| riscv-gnu-toolchain | GNU Compiler Toolchain |  gcc 10.1.0 ld 2.3.4  |
-|     riscv-tools     | Simulator & Bootloader |    master (will be replace)   |
-|        conf         |     config for SDK     |             |
+|      buildroot      |    Build initramfs     |  2020.08.x  |
+|        linux        |      Linux Kernel      |    5.9.6    |
+| riscv-gnu-toolchain | GNU Compiler Toolchain |  gcc 10.2.0 ld 2.35  |
+| riscv-(isa-sim/pk)  | Simulator & Bootloader |    master   |
+|         conf        |     config for SDK     |             |
 
 ## Quickstart
 Build dependencies on Ubuntu 16.04/18.04:
 ```bash
 $ sudo apt-get install device-tree-compiler autoconf automake autotools-dev    \
 curl libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo \
-gperf libtool patchutils bc zlib1g-dev libexpat-dev python-dev python3-dev
+gperf libtool patchutils bc zlib1g-dev libexpat-dev python-dev python3-dev unzip
 ```
 ```bash
-git clone https://github.com/Phantom1003/riscv-rss-sdk.git
+git clone https://github.com/phantom-v/riscv-rss-sdk.git
+
+# For people who only want to run linux on spike
+sh update-submodule.sh
+# For people who want to hack system
 git submodule update --init --recursive --progress
+
 #	NOTICE: 
 # 		If you already have a riscv toolchain, please notice ** DO NOT SET
 #		 $RISCV and MAKE SURE NO ORIGIN RISCV TOOLCHAIN IN YOUR $PATH **
@@ -52,7 +57,7 @@ Same to linux, if you want to add driver for new devices, `make linux-menuconfig
 
 1. Build RISC-V GNU Toolchain
 
-   The key to build the dynamic link elf is using the correspond kernel version header to build the gnu toolchain, and more kernel version information you can find in `./riscv-gnu-toolchain/linux-headers/include/linux/version.h`, the macro `LINUX_VERSION_CODE` present the kernel version, for example, you can find in this SDK, its value is 328712 = 0x050408, which means 5.4.8. 
+   The key to build the dynamic link elf is using the correspond kernel version header to build the gnu toolchain. And if you want to use this SDK to do some development on your own chip, you may also need to change ARCH@ABI. 
 
 2.  Build rootfs   
    Using `buildroot` to help you to build a rootfs, you can add config in `conf/buildroot_initramfs_config` to add package, and you can copy your pre-compiled elf in `work/initramfs_sysroot` to access in Spike.
