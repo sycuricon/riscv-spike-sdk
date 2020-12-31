@@ -39,7 +39,7 @@ spike := $(toolchain_dest)/bin/spike
 
 qemu_srcdir := $(srcdir)/riscv-gnu-toolchain/qemu
 qemu_wrkdir := $(wrkdir)/qemu
-qemu := $(qemu_wrkdir)/prefix/bin/qemu-system-riscv64
+qemu :=  $(toolchain_dest)/bin/qemu-system-riscv64
 
 target_linux  := riscv64-unknown-linux-gnu
 target_newlib := riscv64-unknown-elf
@@ -69,8 +69,7 @@ $(toolchain_dest)/bin/$(target_newlib)-gcc: $(toolchain_srcdir)
 	mkdir -p $(toolchain_wrkdir)
 	cd $(toolchain_wrkdir); $(toolchain_srcdir)/configure \
 		--prefix=$(toolchain_dest) \
-		--with-arch=$(ISA) \
-		--with-abi=$(ABI) 
+		--enable-multilib
 	$(MAKE) -C $(toolchain_wrkdir) 
 
 $(buildroot_initramfs_wrkdir)/.config: $(buildroot_srcdir)
@@ -115,7 +114,8 @@ $(vmlinux): $(linux_srcdir) $(linux_wrkdir)/.config $(buildroot_initramfs_sysroo
 		CONFIG_INITRAMFS_ROOT_GID=$(shell id -g) \
 		CROSS_COMPILE=riscv64-unknown-linux-gnu- \
 		ARCH=riscv \
-		vmlinux
+		KBUILD_CFLAGS_KERNEL="-fdump-rtl-expand" \
+		all
 
 $(vmlinux_stripped): $(vmlinux)
 	$(target_linux)-strip -o $@ $<
@@ -124,7 +124,7 @@ $(vmlinux_stripped): $(vmlinux)
 linux-menuconfig: $(linux_wrkdir)/.config
 	$(MAKE) -C $(linux_srcdir) O=$(dir $<) ARCH=riscv menuconfig
 	$(MAKE) -C $(linux_srcdir) O=$(dir $<) ARCH=riscv savedefconfig
-	cp $(dir $<)/defconfig conf/linux_defconfig
+	# cp $(dir $<)/defconfig conf/linux_defconfig
 
 $(bbl): $(pk_srcdir) $(vmlinux_stripped)
 	rm -rf $(pk_wrkdir)
@@ -134,6 +134,7 @@ $(bbl): $(pk_srcdir) $(vmlinux_stripped)
 		--with-payload=$(vmlinux_stripped) \
 		--enable-logo \
 		--with-logo=$(abspath conf/logo.txt) 
+		# --with-dts=$(abspath conf/spike.dts)
 	CFLAGS="-mabi=$(ABI) -march=$(ISA)" $(MAKE) -C $(pk_wrkdir)
 
 
