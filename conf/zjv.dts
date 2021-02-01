@@ -1,0 +1,53 @@
+/dts-v1/;
+
+/ {
+  #address-cells = <2>;
+  #size-cells = <2>;
+  compatible = "zjv,phvntom-bare-dev";
+  model = "zjv,phvntom-bare";
+  chosen {
+    bootargs = "";
+  };
+  cpus {
+    #address-cells = <1>;
+    #size-cells = <0>;
+    timebase-frequency = <10000000>;
+    CPU0: cpu@0 {
+      device_type = "cpu";
+      reg = <0>;
+      status = "okay";
+      compatible = "riscv";
+      riscv,isa = "rv64ima";
+      mmu-type = "riscv,sv39";
+      riscv,pmpregions = <16>;
+      riscv,pmpgranularity = <4>;
+      clock-frequency = <1000000000>;
+      CPU0_intc: interrupt-controller {
+        #interrupt-cells = <1>;
+        interrupt-controller;
+        compatible = "riscv,cpu-intc";
+      };
+    };
+  };
+  memory@80000000 {
+    device_type = "memory";
+    reg = <0x0 0x80000000 0x0 0x1c00000>;
+  };
+  soc {
+    #address-cells = <2>;
+    #size-cells = <2>;
+    compatible = "zjv,phvntom-bare-soc", "simple-bus";
+    ranges;
+    clint@38000000 {
+      compatible = "riscv,clint0";
+      interrupts-extended = <&CPU0_intc 3 &CPU0_intc 7 >;
+      reg = <0x0 0x38000000 0x0 0xc0000>;
+    };
+    uart@41000000 {
+      compatible = "ns16550a";
+      reg = <0x0 0x41000000 0x0 0x100000>;
+      reg-shift = <0x2>;
+    };
+  };
+};
+

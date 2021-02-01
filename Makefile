@@ -2,8 +2,8 @@
 # a toolchain install tree that was built via other means.
 RISCV ?= $(CURDIR)/toolchain
 PATH := $(RISCV)/bin:$(PATH)
-ISA ?= rv64imafdc
-ABI ?= lp64d
+ISA ?= rv64ima
+ABI ?= lp64
 
 srcdir := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 srcdir := $(srcdir:/=)
@@ -30,7 +30,9 @@ vmlinux_stripped := $(linux_wrkdir)/vmlinux-stripped
 
 pk_srcdir := $(srcdir)/riscv-tools/riscv-pk
 pk_wrkdir := $(wrkdir)/riscv-pk
-bbl := $(pk_wrkdir)/bbl
+bbl     := $(pk_wrkdir)/bbl
+bbl_bin := $(pk_wrkdir)/bbl.bin
+bbl_hex := $(pk_wrkdir)/bbl.bin.txt
 pk  := $(pk_wrkdir)/pk
 
 spike_srcdir := $(srcdir)/riscv-tools/riscv-isa-sim
@@ -45,7 +47,7 @@ target_linux  := riscv64-unknown-linux-gnu
 target_newlib := riscv64-unknown-elf
 
 .PHONY: all
-all: sim
+all: zjv
 
 newlib: $(RISCV)/bin/$(target_newlib)-gcc
 
@@ -67,10 +69,11 @@ $(toolchain_dest)/bin/$(target_linux)-gcc: $(toolchain_srcdir)
 
 $(toolchain_dest)/bin/$(target_newlib)-gcc: $(toolchain_srcdir)
 	mkdir -p $(toolchain_wrkdir)
+	$(MAKE) -C $(linux_srcdir) O=$(toolchain_wrkdir) ARCH=riscv INSTALL_HDR_PATH=$(abspath $(toolchain_srcdir)/linux-headers) headers_install
 	cd $(toolchain_wrkdir); $(toolchain_srcdir)/configure \
 		--prefix=$(toolchain_dest) \
 		--with-arch=$(ISA) \
-		--with-abi=$(ABI) 
+		--with-abi=$(ABI) --with-cmodel=medany
 	$(MAKE) -C $(toolchain_wrkdir) 
 
 $(buildroot_initramfs_wrkdir)/.config: $(buildroot_srcdir)
@@ -114,7 +117,7 @@ $(vmlinux): $(linux_srcdir) $(linux_wrkdir)/.config $(buildroot_initramfs_sysroo
 		CONFIG_INITRAMFS_ROOT_UID=$(shell id -u) \
 		CONFIG_INITRAMFS_ROOT_GID=$(shell id -g) \
 		CROSS_COMPILE=riscv64-unknown-linux-gnu- \
-		ARCH=riscv V=1 \
+		ARCH=riscv KBUILD_CFLAGS_KERNEL="-march=rv64ima -mabi=lp64 -g" \
 		vmlinux
 
 $(vmlinux_stripped): $(vmlinux)
@@ -134,7 +137,9 @@ $(bbl): $(pk_srcdir) $(vmlinux_stripped)
 		--host=$(target_linux) \
 		--with-payload=$(vmlinux_stripped) \
 		--enable-logo \
-		--with-logo=$(abspath conf/logo.txt) 
+		--with-logo=$(abspath conf/logo.txt) \
+		--with-dts=$(abspath conf/zjv.dts) 
+# --enable-print-device-tree
 	CFLAGS="-mabi=$(ABI) -march=$(ISA)" $(MAKE) -C $(pk_wrkdir)
 
 
@@ -146,6 +151,7 @@ $(pk): $(pk_srcdir) $(RISCV)/bin/$(target_newlib)-gcc
 		--prefix=$(abspath $(toolchain_dest))
 	CFLAGS="-mabi=$(ABI) -march=$(ISA)" $(MAKE) -C $(pk_wrkdir)
 	$(MAKE) -C $(pk_wrkdir) install
+
 
 $(spike): $(spike_srcdir) 
 	rm -rf $(spike_wrkdir)
@@ -180,11 +186,15 @@ clean:
 
 .PHONY: sim
 sim: $(bbl) $(spike)
-	$(spike) --isa=$(ISA) -p4 $(bbl)
+	/home/phantom/toolchain/bin/spike --isa=$(ISA) -p1 $(bbl)
 
 .PHONY: qemu
 qemu: $(qemu) $(bbl) 
 	$(qemu) -nographic -machine virt -kernel $(bbl) \
 		-netdev user,id=net0 -device virtio-net-device,netdev=net0
 
+.PHONY: zjv
+zjv: $(bbl)
+	$(target_linux)-objcopy -O binary $(bbl) $(bbl_bin)
+	od -v -An -tx8 $(bbl_bin) > $(bbl_hex)
 

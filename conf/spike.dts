@@ -1,0 +1,65 @@
+/dts-v1/;
+
+/ {
+  #address-cells = <2>;
+  #size-cells = <2>;
+  compatible = "zjv,phvntom-bare-dev";
+  model = "zjv,phvntom-bare";
+  chosen {
+    bootargs = "";
+  };
+  cpus {
+    #address-cells = <1>;
+    #size-cells = <0>;
+    timebase-frequency = <10000000>;
+    CPU0: cpu@0 {
+      device_type = "cpu";
+      reg = <0>;
+      status = "okay";
+      compatible = "riscv";
+      riscv,isa = "rv64ima";
+      mmu-type = "riscv,sv39";
+      riscv,pmpregions = <16>;
+      riscv,pmpgranularity = <4>;
+      clock-frequency = <1000000000>;
+      CPU0_intc: interrupt-controller {
+        #interrupt-cells = <1>;
+        interrupt-controller;
+        compatible = "riscv,cpu-intc";
+      };
+    };
+  };
+  memory@80000000 {
+    device_type = "memory";
+    reg = <0x0 0x80000000 0x0 0x1c00000>;
+  };
+  soc {
+    #address-cells = <2>;
+    #size-cells = <2>;
+    compatible = "zjv,phvntom-bare-soc", "simple-bus";
+    ranges;
+    clint@2000000 {
+      compatible = "riscv,clint0";
+      interrupts-extended = <&CPU0_intc 3 &CPU0_intc 7 >;
+      reg = <0x0 0x2000000 0x0 0xc0000>;
+    };
+    uart@10000000 {
+      compatible = "ns16550a";
+      reg = <0x0 0x10000000 0x0 0x100>;
+      reg-shift = <0x0>;
+      interrupts = <0x1>;
+      interrupt-parent = <0x2>;
+    };
+    interrupt-controller@c000000 {
+      interrupt-controller;
+      #interrupt-cells = <0x1>;
+      phandle = <0x2>;
+      riscv,ndev = <0x20>;
+      riscv,max-priority = <0x7>;
+      compatible = "riscv,plic0";
+      reg = <0x0 0xc000000 0x0 0x4000000>;
+      interrupts-extended = <&CPU0_intc 0x9 &CPU0_intc 0xb >;
+    };
+  };
+};
+
