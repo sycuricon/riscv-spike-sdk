@@ -28,20 +28,20 @@ linux_defconfig := $(confdir)/linux_defconfig
 vmlinux := $(linux_wrkdir)/vmlinux
 vmlinux_stripped := $(linux_wrkdir)/vmlinux-stripped
 
-pk_srcdir := $(srcdir)/riscv-tools/riscv-pk
+pk_srcdir := $(srcdir)/riscv-pk
 pk_wrkdir := $(wrkdir)/riscv-pk
 bbl     := $(pk_wrkdir)/bbl
 bbl_bin := $(pk_wrkdir)/bbl.bin
 bbl_hex := $(pk_wrkdir)/bbl.bin.txt
 pk  := $(pk_wrkdir)/pk
 
-spike_srcdir := $(srcdir)/riscv-tools/riscv-isa-sim
+spike_srcdir := $(srcdir)/riscv-isa-sim
 spike_wrkdir := $(wrkdir)/riscv-isa-sim
 spike := $(toolchain_dest)/bin/spike
 
 qemu_srcdir := $(srcdir)/riscv-gnu-toolchain/qemu
 qemu_wrkdir := $(wrkdir)/qemu
-qemu := $(qemu_wrkdir)/prefix/bin/qemu-system-riscv64
+qemu :=  $(toolchain_dest)/bin/qemu-system-riscv64
 
 target_linux  := riscv64-unknown-linux-gnu
 target_newlib := riscv64-unknown-elf
@@ -80,10 +80,10 @@ $(buildroot_initramfs_wrkdir)/.config: $(buildroot_srcdir)
 	rm -rf $(dir $@)
 	mkdir -p $(dir $@)
 	cp $(buildroot_initramfs_config) $@
-	$(MAKE) -C $< RISCV=$(RISCV) PATH=$(PATH) O=$(buildroot_initramfs_wrkdir) olddefconfig CROSS_COMPILE=riscv64-unknown-linux-gnu-
+	$(MAKE) -C $< RISCV=$(RISCV) PATH="$(PATH)" O=$(buildroot_initramfs_wrkdir) olddefconfig CROSS_COMPILE=riscv64-unknown-linux-gnu-
 
 $(buildroot_initramfs_tar): $(buildroot_srcdir) $(buildroot_initramfs_wrkdir)/.config $(RISCV)/bin/$(target_linux)-gcc $(buildroot_initramfs_config)
-	$(MAKE) -C $< RISCV=$(RISCV) PATH=$(PATH) O=$(buildroot_initramfs_wrkdir)
+	$(MAKE) -C $< RISCV=$(RISCV) PATH="$(PATH)" O=$(buildroot_initramfs_wrkdir)
 
 .PHONY: buildroot_initramfs-menuconfig
 buildroot_initramfs-menuconfig: $(buildroot_initramfs_wrkdir)/.config $(buildroot_srcdir)
@@ -122,13 +122,12 @@ $(vmlinux): $(linux_srcdir) $(linux_wrkdir)/.config $(buildroot_initramfs_sysroo
 
 $(vmlinux_stripped): $(vmlinux)
 	$(target_linux)-strip -o $@ $<
-	
 
 .PHONY: linux-menuconfig
 linux-menuconfig: $(linux_wrkdir)/.config
 	$(MAKE) -C $(linux_srcdir) O=$(dir $<) ARCH=riscv menuconfig
 	$(MAKE) -C $(linux_srcdir) O=$(dir $<) ARCH=riscv savedefconfig
-	cp $(dir $<)/defconfig conf/linux_defconfig
+	# cp $(dir $<)/defconfig conf/linux_defconfig
 
 $(bbl): $(pk_srcdir) $(vmlinux_stripped)
 	rm -rf $(pk_wrkdir)
@@ -138,7 +137,7 @@ $(bbl): $(pk_srcdir) $(vmlinux_stripped)
 		--with-payload=$(vmlinux_stripped) \
 		--enable-logo \
 		--with-logo=$(abspath conf/logo.txt) \
-		--with-dts=$(abspath conf/zjv.dts) 
+		--with-dts=$(abspath conf/spike.dts) 
 # --enable-print-device-tree
 	CFLAGS="-mabi=$(ABI) -march=$(ISA)" $(MAKE) -C $(pk_wrkdir)
 
@@ -168,6 +167,7 @@ $(qemu): $(qemu_srcdir)
 	mkdir -p $(qemu_wrkdir)
 	mkdir -p $(dir $@)
 	cd $(qemu_wrkdir) && $</configure \
+		--disable-docs \
 		--prefix=$(dir $(abspath $(dir $@))) \
 		--target-list=riscv64-linux-user,riscv64-softmmu
 	$(MAKE) -C $(qemu_wrkdir)
