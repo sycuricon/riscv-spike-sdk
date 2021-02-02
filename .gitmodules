@@ -12,4 +12,7 @@
 	url = https://github.com/riscv/riscv-pk
 [submodule "riscv-isa-sim"]
 	path = riscv-isa-sim
-	url = https://github.com/riscv/riscv-isa-sim
+	url = https://github.com/phantom-v/riscv-isa-sim
+[submodule "riscv-openocd"]
+	path = riscv-openocd
+	url = https://github.com/riscv/riscv-openocd

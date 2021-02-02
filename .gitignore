@@ -2,3 +2,5 @@
 work/
 toolchain/
 log
+build/
+sdcard.img

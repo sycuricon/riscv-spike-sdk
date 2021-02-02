@@ -8,7 +8,7 @@ ABI ?= lp64
 srcdir := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 srcdir := $(srcdir:/=)
 confdir := $(srcdir)/conf
-wrkdir := $(CURDIR)/work
+wrkdir := $(CURDIR)/build
 
 toolchain_srcdir := $(srcdir)/riscv-gnu-toolchain
 toolchain_wrkdir := $(wrkdir)/riscv-gnu-toolchain
@@ -30,6 +30,7 @@ vmlinux_stripped := $(linux_wrkdir)/vmlinux-stripped
 
 pk_srcdir := $(srcdir)/riscv-pk
 pk_wrkdir := $(wrkdir)/riscv-pk
+pk_defdts := $(confdir)/spike.dts
 bbl     := $(pk_wrkdir)/bbl
 bbl_bin := $(pk_wrkdir)/bbl.bin
 bbl_hex := $(pk_wrkdir)/bbl.bin.txt
@@ -37,7 +38,10 @@ pk  := $(pk_wrkdir)/pk
 
 spike_srcdir := $(srcdir)/riscv-isa-sim
 spike_wrkdir := $(wrkdir)/riscv-isa-sim
-spike := $(toolchain_dest)/bin/spike
+spike := $(spike_wrkdir)/spike
+
+openocd_srcdir := $(srcdir)/riscv-openocd
+openocd_wrkdir := $(wrkdir)/riscv-openocd
 
 qemu_srcdir := $(srcdir)/riscv-gnu-toolchain/qemu
 qemu_wrkdir := $(wrkdir)/qemu
@@ -47,15 +51,24 @@ target_linux  := riscv64-unknown-linux-gnu
 target_newlib := riscv64-unknown-elf
 
 .PHONY: all
-all: zjv
+all: sim 
 
 newlib: $(RISCV)/bin/$(target_newlib)-gcc
-
 
 ifneq ($(RISCV),$(toolchain_dest))
 $(RISCV)/bin/$(target_linux)-gcc:
 	$(error The RISCV environment variable was set, but is not pointing at a toolchain install tree)
 endif
+
+$(openocd_srcdir)/configure.ac:
+	cd $(openocd_srcdir); ./bootstrap
+
+$(toolchain_dest)/bin/openocd: $(openocd_srcdir)/configure.ac
+	mkdir -p $(openocd_wrkdir)
+	cd $(openocd_wrkdir); $(openocd_srcdir)/configure \
+	   --prefix=$(toolchain_dest)
+	$(MAKE) -C $(openocd_wrkdir)
+	$(MAKE) -C $(openocd_wrkdir) install
 
 $(toolchain_dest)/bin/$(target_linux)-gcc: $(toolchain_srcdir)
 	mkdir -p $(toolchain_wrkdir)
@@ -84,12 +97,6 @@ $(buildroot_initramfs_wrkdir)/.config: $(buildroot_srcdir)
 
 $(buildroot_initramfs_tar): $(buildroot_srcdir) $(buildroot_initramfs_wrkdir)/.config $(RISCV)/bin/$(target_linux)-gcc $(buildroot_initramfs_config)
 	$(MAKE) -C $< RISCV=$(RISCV) PATH="$(PATH)" O=$(buildroot_initramfs_wrkdir)
-
-.PHONY: buildroot_initramfs-menuconfig
-buildroot_initramfs-menuconfig: $(buildroot_initramfs_wrkdir)/.config $(buildroot_srcdir)
-	$(MAKE) -C $(dir $<) O=$(buildroot_initramfs_wrkdir) menuconfig
-	$(MAKE) -C $(dir $<) O=$(buildroot_initramfs_wrkdir) savedefconfig
-	cp $(dir $<)/defconfig conf/buildroot_initramfs_config
 
 $(buildroot_initramfs_sysroot): $(buildroot_initramfs_tar)
 	mkdir -p $(buildroot_initramfs_sysroot)
@@ -123,13 +130,7 @@ $(vmlinux): $(linux_srcdir) $(linux_wrkdir)/.config $(buildroot_initramfs_sysroo
 $(vmlinux_stripped): $(vmlinux)
 	$(target_linux)-strip -o $@ $<
 
-.PHONY: linux-menuconfig
-linux-menuconfig: $(linux_wrkdir)/.config
-	$(MAKE) -C $(linux_srcdir) O=$(dir $<) ARCH=riscv menuconfig
-	$(MAKE) -C $(linux_srcdir) O=$(dir $<) ARCH=riscv savedefconfig
-	# cp $(dir $<)/defconfig conf/linux_defconfig
-
-$(bbl): $(pk_srcdir) $(vmlinux_stripped)
+$(bbl): $(pk_srcdir) $(vmlinux_stripped) $(pk_defdts)
 	rm -rf $(pk_wrkdir)
 	mkdir -p $(pk_wrkdir)
 	cd $(pk_wrkdir) && $</configure \
@@ -137,10 +138,9 @@ $(bbl): $(pk_srcdir) $(vmlinux_stripped)
 		--with-payload=$(vmlinux_stripped) \
 		--enable-logo \
 		--with-logo=$(abspath conf/logo.txt) \
-		--with-dts=$(abspath conf/spike.dts) 
-# --enable-print-device-tree
+		--with-dts=$(pk_defdts)
+		# --enable-print-device-tree
 	CFLAGS="-mabi=$(ABI) -march=$(ISA)" $(MAKE) -C $(pk_wrkdir)
-
 
 $(pk): $(pk_srcdir) $(RISCV)/bin/$(target_newlib)-gcc
 	rm -rf $(pk_wrkdir)
@@ -149,18 +149,16 @@ $(pk): $(pk_srcdir) $(RISCV)/bin/$(target_newlib)-gcc
 		--host=$(target_newlib) \
 		--prefix=$(abspath $(toolchain_dest))
 	CFLAGS="-mabi=$(ABI) -march=$(ISA)" $(MAKE) -C $(pk_wrkdir)
-	$(MAKE) -C $(pk_wrkdir) install
-
+	$(MAKE) -C $(pk_wrkdir)
 
 $(spike): $(spike_srcdir) 
 	rm -rf $(spike_wrkdir)
 	mkdir -p $(spike_wrkdir)
 	mkdir -p $(dir $@)
 	cd $(spike_wrkdir) && $</configure \
-		--prefix=$(dir $(abspath $(dir $@))) 
+		--enable-commitlog --enable-zjv-device \
+		--prefix=$(dir $(abspath $(dir $@)))
 	$(MAKE) -C $(spike_wrkdir)
-	$(MAKE) -C $(spike_wrkdir) install
-	touch -c $@
 
 $(qemu): $(qemu_srcdir)
 	rm -rf $(qemu_wrkdir)
@@ -172,8 +170,6 @@ $(qemu): $(qemu_srcdir)
 		--target-list=riscv64-linux-user,riscv64-softmmu
 	$(MAKE) -C $(qemu_wrkdir)
 	$(MAKE) -C $(qemu_wrkdir) install
-	touch -c $@
-
 
 .PHONY: buildroot_initramfs_sysroot vmlinux bbl
 buildroot_initramfs_sysroot: $(buildroot_initramfs_sysroot)
@@ -184,14 +180,20 @@ bbl: $(bbl)
 clean:
 	rm -rf -- $(wrkdir) $(toolchain_dest)
 
-.PHONY: sim
+.PHONY: sim sim-debug
 sim: $(bbl) $(spike)
-	/home/phantom/toolchain/bin/spike --isa=$(ISA) -p1 $(bbl)
+	$(spike) --isa=$(ISA) -p1 $(bbl)
 
-.PHONY: qemu
+sim-debug: $(bbl) $(spike) $(toolchain_dest)/bin/openocd
+	$(spike) --isa=$(ISA) -H --rbb-port=9824 -p1 $(bbl) & (sleep 1;openocd -f conf/spike.cfg)
+
+.PHONY: qemu qemu-debug
 qemu: $(qemu) $(bbl) 
 	$(qemu) -nographic -machine virt -kernel $(bbl) \
 		-netdev user,id=net0 -device virtio-net-device,netdev=net0
+
+qemu-debug: $(qemu) $(bbl) 
+	$(qemu) -nographic -machine virt -kernel $(bbl) -s -S
 
 .PHONY: zjv
 zjv: $(bbl)
