@@ -2,7 +2,7 @@
 # a toolchain install tree that was built via other means.
 RISCV ?= $(CURDIR)/toolchain
 PATH := $(RISCV)/bin:$(PATH)
-ISA ?= rv64ima
+ISA ?= rv64imac
 ABI ?= lp64
 
 srcdir := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
