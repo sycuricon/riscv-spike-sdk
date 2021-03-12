@@ -1,4 +1,9 @@
+# IDE
+.vscode/
+
+
 # toolchian
-work/
+build/
 toolchain/
 log
+
