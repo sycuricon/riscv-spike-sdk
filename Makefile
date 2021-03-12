@@ -8,7 +8,7 @@ ABI ?= lp64d
 srcdir := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 srcdir := $(srcdir:/=)
 confdir := $(srcdir)/conf
-wrkdir := $(CURDIR)/work
+wrkdir := $(CURDIR)/build
 
 toolchain_srcdir := $(srcdir)/riscv-gnu-toolchain
 toolchain_wrkdir := $(wrkdir)/riscv-gnu-toolchain
