@@ -15,8 +15,8 @@ This SDK follows the newest Linux Kernel, GNU toolchain and Spike, the functions
 |       Folder        |      Description       |   Version   |
 | :-----------------: | :--------------------: | :---------: |
 |      buildroot      |    Build initramfs     |  2021.2.x  |
-|        linux        |      Linux Kernel      |    5.11.6    |
-| riscv-gnu-toolchain | GNU Compiler Toolchain |  gcc 10.2.0 ld 2.35  |
+|        linux        |      Linux Kernel      |    5.12.0    |
+| riscv-gnu-toolchain | GNU Compiler Toolchain |  gcc 10.2.0 ld 2.36  |
 | riscv-(isa-sim/pk)  | Simulator & Bootloader |    master   |
 |         conf        |     config for SDK     |             |
 
@@ -31,9 +31,9 @@ libglib2.0-dev libpixman-1-dev
 ```bash
 git clone https://github.com/phantom-v/riscv-rss-sdk.git
 
-# For people who only want to run linux on spike
-sh update-submodule.sh
-# For people who want to hack system
+# For people who only want to have a try
+sh quickstart.sh
+# For people who want to develop the whole system
 git submodule update --init --recursive --progress
 
 #	NOTICE: 
