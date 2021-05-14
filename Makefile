@@ -114,7 +114,6 @@ $(vmlinux): $(linux_srcdir) $(linux_wrkdir)/.config $(buildroot_initramfs_sysroo
 		CONFIG_INITRAMFS_ROOT_GID=$(shell id -g) \
 		CROSS_COMPILE=riscv64-unknown-linux-gnu- \
 		ARCH=riscv \
-		KBUILD_CFLAGS_KERNEL="-fdump-rtl-expand" \
 		all
 
 $(vmlinux_stripped): $(vmlinux)
@@ -132,9 +131,8 @@ $(bbl): $(pk_srcdir) $(vmlinux_stripped)
 	cd $(pk_wrkdir) && $</configure \
 		--host=$(target_linux) \
 		--with-payload=$(vmlinux_stripped) \
-		--enable-logo \
-		--with-logo=$(abspath conf/logo.txt) 
-		# --with-dts=$(abspath conf/spike.dts)
+		--enable-logo --with-logo=$(abspath conf/logo.txt) \
+		--with-dts=$(abspath conf/starship.dts)
 	CFLAGS="-mabi=$(ABI) -march=$(ISA)" $(MAKE) -C $(pk_wrkdir)
 
 
