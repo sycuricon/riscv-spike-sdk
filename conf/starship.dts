@@ -9,7 +9,7 @@
 		serial0 = &L10;
 	};
 	L13: chosen {
-		bootargs = "nokaslr console=hvc0";
+		bootargs = "nokaslr noinitrd console=hvc0 root=/dev/mmcblk0p2 rootwait rw";
 	};
 	L17: cpus {
 		#address-cells = <1>;
