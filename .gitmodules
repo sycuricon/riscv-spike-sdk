@@ -1,15 +1,15 @@
 [submodule "riscv-gnu-toolchain"]
-	path = riscv-gnu-toolchain
+	path = repo/riscv-gnu-toolchain
 	url = https://github.com/riscv/riscv-gnu-toolchain.git
 [submodule "buildroot"]
-	path = buildroot
+	path = repo/buildroot
 	url = https://github.com/buildroot/buildroot.git
 [submodule "linux"]
-	path = linux
+	path = repo/linux
 	url = https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git
 [submodule "riscv-pk"]
-	path = riscv-pk
+	path = repo/riscv-pk
 	url = https://github.com/riscv/riscv-pk
 [submodule "riscv-isa-sim"]
-	path = riscv-isa-sim
+	path = repo/riscv-isa-sim
 	url = https://github.com/riscv/riscv-isa-sim
