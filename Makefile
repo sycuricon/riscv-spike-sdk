@@ -5,9 +5,10 @@ PATH := $(RISCV)/bin:$(PATH)
 ISA ?= rv64imafdc
 ABI ?= lp64d
 
-srcdir := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
-srcdir := $(srcdir:/=)
-confdir := $(srcdir)/conf
+topdir := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
+topdir := $(topdir:/=)
+srcdir := $(topdir)/repo
+confdir := $(topdir)/conf
 wrkdir := $(CURDIR)/build
 
 toolchain_srcdir := $(srcdir)/riscv-gnu-toolchain
@@ -114,7 +115,7 @@ $(vmlinux): $(linux_srcdir) $(linux_wrkdir)/.config $(buildroot_initramfs_sysroo
 		CONFIG_INITRAMFS_ROOT_GID=$(shell id -g) \
 		CROSS_COMPILE=riscv64-unknown-linux-gnu- \
 		ARCH=riscv \
-		KBUILD_CFLAGS_KERNEL="-fdump-rtl-expand" \
+		KBUILD_CFLAGS_KERNEL="-save-temps=obj" \
 		all
 
 $(vmlinux_stripped): $(vmlinux)
@@ -133,8 +134,8 @@ $(bbl): $(pk_srcdir) $(vmlinux_stripped)
 		--host=$(target_linux) \
 		--with-payload=$(vmlinux_stripped) \
 		--enable-logo \
-		--with-logo=$(abspath conf/logo.txt) 
-		# --with-dts=$(abspath conf/spike.dts)
+		--with-logo=$(abspath conf/logo.txt) \
+		--with-dts=$(abspath conf/spike.dts)
 	CFLAGS="-mabi=$(ABI) -march=$(ISA)" $(MAKE) -C $(pk_wrkdir)
 
 
