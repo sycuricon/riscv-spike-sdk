@@ -14,10 +14,10 @@ This SDK follows the newest Linux Kernel, GNU toolchain and Spike, the functions
 
 |       Folder        |      Description       |   Version   |
 | :-----------------: | :--------------------: | :---------: |
-|      buildroot      |    Build initramfs     |  2021.2.x  |
-|        linux        |      Linux Kernel      |    5.12.0    |
-| riscv-gnu-toolchain | GNU Compiler Toolchain |  gcc 10.2.0 ld 2.36  |
-| riscv-(isa-sim/pk)  | Simulator & Bootloader |    master   |
+|    repo/buildroot    |    Build initramfs     |  2021.2.x  |
+|      repo/linux      |      Linux Kernel      |    5.12.0    |
+| repo/riscv-gnu-toolchain | GNU Compiler Toolchain |  gcc 10.2.0 ld 2.36  |
+| repo/riscv-(isa-sim,pk)  | Simulator & Bootloader |    master   |
 |         conf        |     config for SDK     |             |
 
 ## Quickstart
