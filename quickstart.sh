@@ -35,8 +35,8 @@ NJOB=4
 root_repo_list=${ROOT_LIST:-"buildroot riscv-gnu-toolchain riscv-pk linux riscv-isa-sim"}
 toolchain_repo_list=${TOOLCHAIN_LIST:-"riscv-binutils riscv-gcc riscv-glibc riscv-newlib riscv-gdb"}
 
-fetch_repo "$root" "$root_repo_list" "--jobs $NJOB"
-fetch_repo "$root/riscv-gnu-toolchain" "$toolchain_repo_list" "--recursive --jobs $NJOB"
+fetch_repo "$root/repo" "$root_repo_list" "--jobs $NJOB"
+fetch_repo "$root/repo/riscv-gnu-toolchain" "$toolchain_repo_list" "--recursive --jobs $NJOB"
 
 echo "[*] done"
 
