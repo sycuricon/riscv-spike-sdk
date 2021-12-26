@@ -26,7 +26,7 @@ Build dependencies on Ubuntu 16.04/18.04:
 $ sudo apt-get install device-tree-compiler autoconf automake autotools-dev    \
 curl libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo \
 gperf libtool patchutils bc zlib1g-dev libexpat-dev python-dev python3-dev unzip \
-libglib2.0-dev libpixman-1-dev
+libglib2.0-dev libpixman-1-dev git rsync
 ```
 ```bash
 git clone https://github.com/phantom-v/riscv-rss-sdk.git
@@ -48,7 +48,7 @@ The default process will only build Linux cross-compiler, which has prefix "risc
 
 The main compile process will run vmlinux on spike directly, to add your test program, you should add your elfs in `./work/buildroot_initramfs_sysroot` and `make` again.
 
-​	**NOTICE**: The test program should use Linux cross-compiler to compile , instead of Newlib cross-compiler.
+**NOTICE**: The test program should use Linux cross-compiler to compile , instead of Newlib cross-compiler.
 
 If the benchmark you choose need some package, you can use `make buildroot_initramfs-menuconfig` to reconfigure buildroot and `touch buildroot && make` to rebuild. 
 
