@@ -29,7 +29,7 @@ gperf libtool patchutils bc zlib1g-dev libexpat-dev python-dev python3-dev unzip
 libglib2.0-dev libpixman-1-dev git rsync wget cpio
 ```
 ```bash
-git clone https://github.com/phantom-v/riscv-rss-sdk.git
+git clone https://github.com/riscv-zju/riscv-rss-sdk.git
 
 # For people who only want to have a try
 sh quickstart.sh
