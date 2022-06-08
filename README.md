@@ -18,6 +18,7 @@ This SDK follows the newest Linux Kernel, GNU toolchain and Spike, the functions
 |      repo/linux      |      Linux Kernel      |    5.12.0    |
 | repo/riscv-gnu-toolchain | GNU Compiler Toolchain |  gcc 10.2.0 ld 2.36  |
 | repo/riscv-(isa-sim,pk)  | Simulator & Bootloader |    master   |
+| repo/opensbi  | Supervisor / Bootloader |    master   |
 |         conf        |     config for SDK     |             |
 
 ## Quickstart
@@ -67,7 +68,16 @@ Same to linux, if you want to add driver for new devices, `make linux-menuconfig
 3. Compile Linux  
    You can find config in `work/linux_defconfig`.
 
-4. Spike  
+4. Bootloader
+   You can choose between `bbl` or `opensbi` to use as bootloader to launch the simulation. Either edit the default in the Makefile or launch
+   ```bash
+   # default
+   BL=opensbi make
+   # or
+   BL=bbl make
+   ```
+
+5. Spike
    The default account is root, following is the terminal log on Linux 5.8.0.
 
 ```
