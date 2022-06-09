@@ -4,6 +4,8 @@ RISCV ?= $(CURDIR)/toolchain
 PATH := $(RISCV)/bin:$(PATH)
 ISA ?= rv64imafdc
 ABI ?= lp64d
+# choose opensbi or bbl here
+BL ?= opensbi
 
 topdir := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 topdir := $(topdir:/=)
@@ -28,11 +30,16 @@ linux_defconfig := $(confdir)/linux_defconfig
 
 vmlinux := $(linux_wrkdir)/vmlinux
 vmlinux_stripped := $(linux_wrkdir)/vmlinux-stripped
+linux_image := $(linux_wrkdir)/arch/riscv/boot/Image
 
 pk_srcdir := $(srcdir)/riscv-pk
 pk_wrkdir := $(wrkdir)/riscv-pk
 bbl := $(pk_wrkdir)/bbl
 pk  := $(pk_wrkdir)/pk
+
+opensbi_srcdir := $(srcdir)/opensbi
+opensbi_wrkdir := $(wrkdir)/opensbi
+fw_jump := $(opensbi_wrkdir)/platform/generic/firmware/fw_jump.elf
 
 spike_srcdir := $(srcdir)/riscv-isa-sim
 spike_wrkdir := $(wrkdir)/riscv-isa-sim
@@ -121,6 +128,8 @@ $(vmlinux): $(linux_srcdir) $(linux_wrkdir)/.config $(buildroot_initramfs_sysroo
 $(vmlinux_stripped): $(vmlinux)
 	$(target_linux)-strip -o $@ $<
 
+$(linux_image): $(vmlinux)
+
 .PHONY: linux-menuconfig
 linux-menuconfig: $(linux_wrkdir)/.config
 	$(MAKE) -C $(linux_srcdir) O=$(dir $<) ARCH=riscv menuconfig
@@ -148,6 +157,11 @@ $(pk): $(pk_srcdir) $(RISCV)/bin/$(target_newlib)-gcc
 	CFLAGS="-mabi=$(ABI) -march=$(ISA)" $(MAKE) -C $(pk_wrkdir)
 	$(MAKE) -C $(pk_wrkdir) install
 
+$(fw_jump): $(opensbi_srcdir) $(linux_image) $(RISCV)/bin/$(target_linux)-gcc
+	rm -rf $(opensbi_wrkdir)
+	mkdir -p $(opensbi_wrkdir)
+	$(MAKE) -C $(opensbi_srcdir) FW_PAYLOAD_PATH=$(linux_image) PLATFORM=generic O=$(opensbi_wrkdir) CROSS_COMPILE=riscv64-unknown-linux-gnu-
+
 $(spike): $(spike_srcdir) 
 	rm -rf $(spike_wrkdir)
 	mkdir -p $(spike_wrkdir)
@@ -171,22 +185,26 @@ $(qemu): $(qemu_srcdir)
 	touch -c $@
 
 
-.PHONY: buildroot_initramfs_sysroot vmlinux bbl
+.PHONY: buildroot_initramfs_sysroot vmlinux bbl fw_jump
 buildroot_initramfs_sysroot: $(buildroot_initramfs_sysroot)
 vmlinux: $(vmlinux)
 bbl: $(bbl)
+fw_image: $(fw_jump)
 
 .PHONY: clean
 clean:
 	rm -rf -- $(wrkdir) $(toolchain_dest)
 
+ifeq ($(BL),opensbi)
+.PHONY: sim
+sim: $(fw_jump) $(spike)
+	$(spike) --isa=$(ISA) -p4 --kernel $(linux_image) $(fw_jump)
+.PHONY: qemu
+qemu: $(qemu) $(fw_jump)
+	$(qemu) -nographic -machine virt -m 256M -bios $(fw_jump) -kernel $(linux_image) \
+		-netdev user,id=net0 -device virtio-net-device,netdev=net0
+else ifeq ($(BL),bbl)
 .PHONY: sim
 sim: $(bbl) $(spike)
 	$(spike) --isa=$(ISA) -p4 $(bbl)
-
-.PHONY: qemu
-qemu: $(qemu) $(bbl) 
-	$(qemu) -nographic -machine virt -kernel $(bbl) \
-		-netdev user,id=net0 -device virtio-net-device,netdev=net0
-
-
+endif
