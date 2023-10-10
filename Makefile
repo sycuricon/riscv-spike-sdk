@@ -115,7 +115,7 @@ ifeq ($(ISA),$(filter rv32%,$(ISA)))
 	$(MAKE) -C $(linux_srcdir) O=$(linux_wrkdir) ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- olddefconfig
 endif
 
-$(vmlinux): $(linux_srcdir) $(linux_wrkdir)/.config $(buildroot_initramfs_sysroot) 
+$(vmlinux): $(RISCV)/bin/$(target_linux)-gcc $(linux_srcdir) $(linux_wrkdir)/.config $(buildroot_initramfs_sysroot) 
 	$(MAKE) -C $< O=$(linux_wrkdir) \
 		CONFIG_INITRAMFS_SOURCE="$(confdir)/initramfs.txt $(buildroot_initramfs_sysroot)" \
 		CONFIG_INITRAMFS_ROOT_UID=$(shell id -u) \
@@ -157,7 +157,7 @@ $(pk): $(pk_srcdir) $(RISCV)/bin/$(target_newlib)-gcc
 	CFLAGS="-mabi=$(ABI) -march=$(ISA)" $(MAKE) -C $(pk_wrkdir)
 	$(MAKE) -C $(pk_wrkdir) install
 
-$(fw_jump): $(opensbi_srcdir) $(linux_image) $(RISCV)/bin/$(target_linux)-gcc
+$(fw_jump): $(RISCV)/bin/$(target_linux)-gcc $(opensbi_srcdir) $(linux_image)
 	rm -rf $(opensbi_wrkdir)
 	mkdir -p $(opensbi_wrkdir)
 	$(MAKE) -C $(opensbi_srcdir) FW_PAYLOAD_PATH=$(linux_image) PLATFORM=generic O=$(opensbi_wrkdir) CROSS_COMPILE=riscv64-unknown-linux-gnu-
@@ -208,3 +208,12 @@ else ifeq ($(BL),bbl)
 sim: $(bbl) $(spike)
 	$(spike) --isa=$(ISA) -p4 $(bbl)
 endif
+
+
+new-lib-gcc: $(toolchain_srcdir)
+	mkdir -p $(toolchain_wrkdir)
+	cd $(toolchain_wrkdir); $(toolchain_srcdir)/configure \
+		--prefix=$(toolchain_dest) \	
+		--enable-multilib
+	$(MAKE) -C $(toolchain_wrkdir)
+
