@@ -213,7 +213,7 @@ endif
 new-lib-gcc: $(toolchain_srcdir)
 	mkdir -p $(toolchain_wrkdir)
 	cd $(toolchain_wrkdir); $(toolchain_srcdir)/configure \
-       		--prefix=$(toolchain_dest) \
-        	--enable-multilib
+		--prefix=$(toolchain_dest) \	
+		--enable-multilib
 	$(MAKE) -C $(toolchain_wrkdir)
 
