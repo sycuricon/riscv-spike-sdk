@@ -4,6 +4,9 @@ RISCV ?= $(CURDIR)/toolchain
 PATH := $(RISCV)/bin:$(PATH)
 ISA ?= rv64imafdc
 ABI ?= lp64d
+CARD ?= /dev/sdc
+ROOTFS ?= False
+DTS ?= conf/starship.dts
 
 srcdir := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 srcdir := $(srcdir:/=)
@@ -24,6 +27,13 @@ buildroot_initramfs_sysroot := $(wrkdir)/buildroot_initramfs_sysroot
 linux_srcdir := $(srcdir)/linux
 linux_wrkdir := $(wrkdir)/linux
 linux_defconfig := $(confdir)/linux_defconfig
+ifneq ($(ROOTFS),False)
+	linux_rootfs_flag := \
+		CONFIG_INITRAMFS_SOURCE="$(confdir)/initramfs.txt $(buildroot_initramfs_sysroot)" \
+		CONFIG_INITRAMFS_ROOT_UID=$(shell id -u) \
+		CONFIG_INITRAMFS_ROOT_GID=$(shell id -g)
+endif
+
 
 vmlinux := $(linux_wrkdir)/vmlinux
 vmlinux_stripped := $(linux_wrkdir)/vmlinux-stripped
@@ -94,6 +104,11 @@ $(buildroot_initramfs_sysroot): $(buildroot_initramfs_tar)
 $(linux_wrkdir)/.config: $(linux_defconfig) $(linux_srcdir)
 	mkdir -p $(dir $@)
 	cp -p $< $@
+ifeq ($(ROOTFS),False)
+	sed 's/CONFIG_BLK_DEV_INITRD=y/# CONFIG_BLK_DEV_INITRD is not set/' -i $@
+else
+	sed 's/# CONFIG_BLK_DEV_INITRD is not set/CONFIG_BLK_DEV_INITRD=y/' -i $@
+endif
 	$(MAKE) -C $(linux_srcdir) O=$(linux_wrkdir) ARCH=riscv olddefconfig
 	echo $(ISA)
 	echo $(filter rv32%,$(ISA))
@@ -107,8 +122,9 @@ ifeq ($(ISA),$(filter rv32%,$(ISA)))
 	$(MAKE) -C $(linux_srcdir) O=$(linux_wrkdir) ARCH=riscv olddefconfig
 endif
 
-$(vmlinux): $(linux_srcdir) $(linux_wrkdir)/.config
+$(vmlinux): $(linux_srcdir) $(linux_wrkdir)/.config $(toolchain_dest)/bin/$(target_linux)-gcc $(buildroot_initramfs_sysroot)
 	$(MAKE) -C $< O=$(linux_wrkdir) \
+		$(linux_rootfs_flag) \
 		CROSS_COMPILE=riscv64-unknown-linux-gnu- \
 		ARCH=riscv \
 		all
@@ -129,7 +145,7 @@ $(bbl): $(pk_srcdir) $(vmlinux_stripped)
 		--host=$(target_linux) \
 		--with-payload=$(vmlinux_stripped) \
 		--enable-logo --with-logo=$(abspath conf/logo.txt) \
-		--with-dts=$(abspath conf/starship.dts)
+		--with-dts=$(abspath $(DTS))
 	CFLAGS="-mabi=$(ABI) -march=$(ISA)" $(MAKE) -C $(pk_wrkdir)
 
 
@@ -183,4 +199,13 @@ qemu: $(qemu) $(bbl)
 	$(qemu) -nographic -machine virt -kernel $(bbl) \
 		-netdev user,id=net0 -device virtio-net-device,netdev=net0
 
+sd_mount = $(wrkdir)/sd_mount
+make_sd: $(bbl) $(buildroot_initramfs_sysroot)
+	sudo dd if=$(bbl).bin of=$(CARD)1 bs=4096
+	rm -r $(sd_mount)
+	mkdir $(sd_mount)
+	sudo umount $(CARD)2
+	sudo mount $(CARD)2 $(sd_mount)
+	sudo cp -r $(buildroot_initramfs_sysroot)/* $(sd_mount)/
+	sudo umount $(CARD)2
 
