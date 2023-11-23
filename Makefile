@@ -4,7 +4,7 @@ RISCV ?= $(CURDIR)/toolchain
 PATH := $(RISCV)/bin:$(PATH)
 ISA ?= rv64imafdc
 ABI ?= lp64d
-CARD ?= /dev/sdc
+CARD ?= /dev/sdb
 ROOTFS ?= False
 DTS ?= conf/starship.dts
 
@@ -122,7 +122,7 @@ ifeq ($(ISA),$(filter rv32%,$(ISA)))
 	$(MAKE) -C $(linux_srcdir) O=$(linux_wrkdir) ARCH=riscv olddefconfig
 endif
 
-$(vmlinux): $(linux_srcdir) $(linux_wrkdir)/.config $(toolchain_dest)/bin/$(target_linux)-gcc $(buildroot_initramfs_sysroot)
+$(vmlinux): $(linux_srcdir) $(linux_wrkdir)/.config $(toolchain_dest)/bin/$(target_linux)-gcc
 	$(MAKE) -C $< O=$(linux_wrkdir) \
 		$(linux_rootfs_flag) \
 		CROSS_COMPILE=riscv64-unknown-linux-gnu- \
@@ -147,7 +147,6 @@ $(bbl): $(pk_srcdir) $(vmlinux_stripped)
 		--enable-logo --with-logo=$(abspath conf/logo.txt) \
 		--with-dts=$(abspath $(DTS))
 	CFLAGS="-mabi=$(ABI) -march=$(ISA)" $(MAKE) -C $(pk_wrkdir)
-
 
 $(pk): $(pk_srcdir) $(RISCV)/bin/$(target_newlib)-gcc
 	rm -rf $(pk_wrkdir)
@@ -202,8 +201,7 @@ qemu: $(qemu) $(bbl)
 sd_mount = $(wrkdir)/sd_mount
 make_sd: $(bbl) $(buildroot_initramfs_sysroot)
 	sudo dd if=$(bbl).bin of=$(CARD)1 bs=4096
-	rm -r $(sd_mount)
-	mkdir $(sd_mount)
+	mkdir -p $(sd_mount)
 	sudo umount $(CARD)2
 	sudo mount $(CARD)2 $(sd_mount)
 	sudo cp -r $(buildroot_initramfs_sysroot)/* $(sd_mount)/
