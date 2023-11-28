@@ -2,7 +2,7 @@
 # a toolchain install tree that was built via other means.
 RISCV ?= $(CURDIR)/toolchain
 PATH := $(RISCV)/bin:$(PATH)
-ISA ?= rv64imafdc
+ISA ?= rv64imafdc_zifencei_zicsr
 ABI ?= lp64d
 # choose opensbi or bbl here
 BL ?= opensbi
@@ -18,11 +18,11 @@ toolchain_wrkdir := $(wrkdir)/riscv-gnu-toolchain
 toolchain_dest := $(CURDIR)/toolchain
 
 buildroot_srcdir := $(srcdir)/buildroot
-buildroot_initramfs_wrkdir := $(wrkdir)/buildroot_initramfs
+buildroot_initramfs_wrkdir := $(topdir)/rootfs/buildroot_initramfs
 buildroot_initramfs_tar := $(buildroot_initramfs_wrkdir)/images/rootfs.tar
 buildroot_initramfs_config := $(confdir)/buildroot_initramfs_config
 buildroot_initramfs_sysroot_stamp := $(wrkdir)/.buildroot_initramfs_sysroot
-buildroot_initramfs_sysroot := $(wrkdir)/buildroot_initramfs_sysroot
+buildroot_initramfs_sysroot := $(topdir)/rootfs/buildroot_initramfs_sysroot
 
 linux_srcdir := $(srcdir)/linux
 linux_wrkdir := $(wrkdir)/linux
@@ -63,7 +63,7 @@ $(RISCV)/bin/$(target_linux)-gcc:
 	$(error The RISCV environment variable was set, but is not pointing at a toolchain install tree)
 endif
 
-$(toolchain_dest)/bin/$(target_linux)-gcc: $(toolchain_srcdir)
+$(toolchain_dest)/bin/$(target_linux)-gcc:
 	mkdir -p $(toolchain_wrkdir)
 	$(MAKE) -C $(linux_srcdir) O=$(toolchain_wrkdir) ARCH=riscv INSTALL_HDR_PATH=$(abspath $(toolchain_srcdir)/linux-headers) headers_install
 	cd $(toolchain_wrkdir); $(toolchain_srcdir)/configure \
@@ -73,7 +73,7 @@ $(toolchain_dest)/bin/$(target_linux)-gcc: $(toolchain_srcdir)
 	$(MAKE) -C $(toolchain_wrkdir) linux
 	# sed 's/^#define LINUX_VERSION_CODE.*/#define LINUX_VERSION_CODE 329226/' -i $(toolchain_dest)/sysroot/usr/include/linux/version.h
 
-$(toolchain_dest)/bin/$(target_newlib)-gcc: $(toolchain_srcdir)
+$(toolchain_dest)/bin/$(target_newlib)-gcc:
 	mkdir -p $(toolchain_wrkdir)
 	cd $(toolchain_wrkdir); $(toolchain_srcdir)/configure \
 		--prefix=$(toolchain_dest) \
@@ -90,7 +90,7 @@ $(buildroot_initramfs_tar): $(buildroot_srcdir) $(buildroot_initramfs_wrkdir)/.c
 	$(MAKE) -C $< RISCV=$(RISCV) PATH="$(PATH)" O=$(buildroot_initramfs_wrkdir)
 
 .PHONY: buildroot_initramfs-menuconfig
-buildroot_initramfs-menuconfig: $(buildroot_initramfs_wrkdir)/.config $(buildroot_srcdir)
+buildroot-menuconfig: $(buildroot_initramfs_wrkdir)/.config $(buildroot_srcdir)
 	$(MAKE) -C $(dir $<) O=$(buildroot_initramfs_wrkdir) menuconfig
 	$(MAKE) -C $(dir $<) O=$(buildroot_initramfs_wrkdir) savedefconfig
 	cp $(dir $<)/defconfig conf/buildroot_initramfs_config
@@ -122,7 +122,6 @@ $(vmlinux): $(linux_srcdir) $(linux_wrkdir)/.config $(buildroot_initramfs_sysroo
 		CONFIG_INITRAMFS_ROOT_GID=$(shell id -g) \
 		CROSS_COMPILE=riscv64-unknown-linux-gnu- \
 		ARCH=riscv \
-		KBUILD_CFLAGS_KERNEL="-save-temps=obj" \
 		all
 
 $(vmlinux_stripped): $(vmlinux)
@@ -191,9 +190,12 @@ vmlinux: $(vmlinux)
 bbl: $(bbl)
 fw_image: $(fw_jump)
 
-.PHONY: clean
+.PHONY: clean mrproper
 clean:
-	rm -rf -- $(wrkdir) $(toolchain_dest)
+	rm -rf -- $(wrkdir)
+
+mrproper:
+	rm -rf -- $(wrkdir) $(toolchain_dest) $(topdir)/rootfs
 
 ifeq ($(BL),opensbi)
 .PHONY: sim
@@ -201,10 +203,13 @@ sim: $(fw_jump) $(spike)
 	$(spike) --isa=$(ISA) -p4 --kernel $(linux_image) $(fw_jump)
 .PHONY: qemu
 qemu: $(qemu) $(fw_jump)
-	$(qemu) -nographic -machine virt -m 256M -bios $(fw_jump) -kernel $(linux_image) \
-		-netdev user,id=net0 -device virtio-net-device,netdev=net0
+	$(qemu) -nographic -machine virt -m 256M -cpu rv64,sv57=on -bios $(fw_jump) -kernel $(linux_image)
 else ifeq ($(BL),bbl)
 .PHONY: sim
 sim: $(bbl) $(spike)
-	$(spike) --isa=$(ISA) -p4 $(bbl)
+	$(spike) --isa=$(ISA)_zicntr_zihpm $(bbl)
+
+.PHONY: qemu
+qemu: $(qemu) $(bbl)
+	$(qemu) -nographic -machine virt -cpu rv64,sv57=on -m 256M -bios $(bbl)
 endif
