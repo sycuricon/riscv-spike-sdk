@@ -4,8 +4,7 @@ RISCV ?= $(CURDIR)/toolchain
 PATH := $(RISCV)/bin:$(PATH)
 ISA ?= rv64imafdc_zifencei_zicsr
 ABI ?= lp64d
-# choose opensbi or bbl here
-BL ?= opensbi
+BL ?= bbl
 
 topdir := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 topdir := $(topdir:/=)
@@ -203,7 +202,7 @@ sim: $(fw_jump) $(spike)
 	$(spike) --isa=$(ISA) -p4 --kernel $(linux_image) $(fw_jump)
 .PHONY: qemu
 qemu: $(qemu) $(fw_jump)
-	$(qemu) -nographic -machine virt -m 256M -cpu rv64,sv57=on -bios $(fw_jump) -kernel $(linux_image)
+	$(qemu) -nographic -machine virt -cpu rv64,sv57=on -bios $(fw_jump) -kernel $(linux_image)
 else ifeq ($(BL),bbl)
 .PHONY: sim
 sim: $(bbl) $(spike)
@@ -211,5 +210,5 @@ sim: $(bbl) $(spike)
 
 .PHONY: qemu
 qemu: $(qemu) $(bbl)
-	$(qemu) -nographic -machine virt -cpu rv64,sv57=on -m 256M -bios $(bbl)
+	$(qemu) -nographic -machine virt -cpu rv64,sv57=on -m 2048M -bios $(bbl)
 endif
