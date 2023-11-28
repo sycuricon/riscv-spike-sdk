@@ -14,9 +14,9 @@ This SDK follows the newest Linux Kernel, GNU toolchain and Spike, the functions
 
 |       Folder        |      Description       |   Version   |
 | :-----------------: | :--------------------: | :---------: |
-|    repo/buildroot    |    Build initramfs     |  2021.2.x  |
-|      repo/linux      |      Linux Kernel      |    5.12.0    |
-| repo/riscv-gnu-toolchain | GNU Compiler Toolchain |  gcc 10.2.0 ld 2.36  |
+|    repo/buildroot    |    Build initramfs     |  2023.8.x  |
+|      repo/linux      |      Linux Kernel      |    6.6.2    |
+| repo/riscv-gnu-toolchain | GNU Compiler Toolchain |  gcc 13.2.0 ld 2.41  |
 | repo/riscv-(isa-sim,pk)  | Simulator & Bootloader |    master   |
 | repo/opensbi  | Supervisor / Bootloader |    master   |
 |         conf        |     config for SDK     |             |
@@ -62,7 +62,7 @@ Same to linux, if you want to add driver for new devices, `make linux-menuconfig
    The key to build the dynamic link elf is using the correspond kernel version header to build the gnu toolchain. And if you want to use this SDK to do some development on your own chip, you may also need to change ARCH@ABI. 
 
 2.  Build rootfs   
-   Using `buildroot` to help you to build a rootfs, you can add config in `conf/buildroot_initramfs_config` to add package, and you can copy your pre-compiled elf in `work/initramfs_sysroot` to access in Spike.
+   Using `buildroot` to help you to build a rootfs, you can add config in `conf/buildroot_initramfs_config` to add package, and you can copy your pre-compiled elf to `rootfs/initramfs_sysroot` to access in Spike.
    And remember, the basic idea of this SDK is to deconfig all the device, because spike is very limited support for devices, specically the Ethernet, so you should not open DHCP.
 
 3. Compile Linux  

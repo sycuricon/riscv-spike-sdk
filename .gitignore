@@ -1,9 +1,10 @@
 # IDE
 .vscode/
-
+.idea/
 
 # toolchian
 build/
 toolchain/
+rootfs/
 log
 

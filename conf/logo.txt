@@ -1,6 +1,6 @@
 
 		  RISC-V Spike Simulator SDK
-	  This SDK is based on SiFive Freedom U SDK.                    
+
 	      ___           ___           ___     
 	     /\  \         /\  \         /\  \    
 	    /  \  \       /  \  \       /  \  \   
