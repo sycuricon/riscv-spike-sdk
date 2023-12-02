@@ -6,12 +6,7 @@ ISA ?= rv64imafdc_zifencei_zicsr
 ABI ?= lp64d
 BL ?= bbl
 BOARD ?= False
-
-ifeq ($(BOARD),False)
-	DTS=$(abspath conf/spike.dts)
-else
-	DTS=$(abspath conf/starship.dts)
-endif
+DTS ?= $(abspath conf/spike.dts)
 
 topdir := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 topdir := $(topdir:/=)
@@ -219,6 +214,10 @@ sim: $(bbl) $(spike)
 qemu: $(qemu) $(bbl)
 	$(qemu) -nographic -machine virt -cpu rv64,sv57=on -m 2048M -bios $(bbl)
 endif
+
+.PHONY: board
+board: DTS=$(abspath conf/starship.dts)
+board: $(bbl)
 
 SD_CARD ?= /dev/sdb
 .PHONY: make_sd
