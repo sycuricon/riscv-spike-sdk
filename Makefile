@@ -5,6 +5,13 @@ PATH := $(RISCV)/bin:$(PATH)
 ISA ?= rv64imafdc_zifencei_zicsr
 ABI ?= lp64d
 BL ?= bbl
+BOARD ?= False
+
+ifeq ($(BOARD),False)
+	DTS=$(abspath conf/spike.dts)
+else
+	DTS=$(abspath conf/starship.dts)
+endif
 
 topdir := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 topdir := $(topdir:/=)
@@ -142,7 +149,7 @@ $(bbl): $(pk_srcdir) $(vmlinux_stripped)
 		--with-payload=$(vmlinux_stripped) \
 		--enable-logo \
 		--with-logo=$(abspath conf/logo.txt) \
-		--with-dts=$(abspath conf/spike.dts)
+		--with-dts=$(DTS)
 	CFLAGS="-mabi=$(ABI) -march=$(ISA)" $(MAKE) -C $(pk_wrkdir)
 
 
@@ -212,3 +219,8 @@ sim: $(bbl) $(spike)
 qemu: $(qemu) $(bbl)
 	$(qemu) -nographic -machine virt -cpu rv64,sv57=on -m 2048M -bios $(bbl)
 endif
+
+SD_CARD ?= /dev/sdb
+.PHONY: make_sd
+make_sd: $(bbl)
+	sudo dd if=$(bbl).bin of=$(SD_CARD)1 bs=4096
