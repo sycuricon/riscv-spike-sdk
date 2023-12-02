@@ -5,8 +5,7 @@ PATH := $(RISCV)/bin:$(PATH)
 ISA ?= rv64imafdc_zifencei_zicsr
 ABI ?= lp64d
 BL ?= bbl
-BOARD ?= False
-DTS ?= $(abspath conf/spike.dts)
+BOARD ?= spike
 
 topdir := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 topdir := $(topdir:/=)
@@ -33,6 +32,7 @@ vmlinux := $(linux_wrkdir)/vmlinux
 vmlinux_stripped := $(linux_wrkdir)/vmlinux-stripped
 linux_image := $(linux_wrkdir)/arch/riscv/boot/Image
 
+DTS ?= $(abspath conf/$(BOARD).dts)
 pk_srcdir := $(srcdir)/riscv-pk
 pk_wrkdir := $(wrkdir)/riscv-pk
 bbl := $(pk_wrkdir)/bbl
@@ -214,10 +214,6 @@ sim: $(bbl) $(spike)
 qemu: $(qemu) $(bbl)
 	$(qemu) -nographic -machine virt -cpu rv64,sv57=on -m 2048M -bios $(bbl)
 endif
-
-.PHONY: board
-board: DTS=$(abspath conf/starship.dts)
-board: $(bbl)
 
 SD_CARD ?= /dev/sdb
 .PHONY: make_sd
