@@ -6,5 +6,6 @@
 build/
 toolchain/
 rootfs/
+test/
 log
 
