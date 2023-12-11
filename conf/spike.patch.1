@@ -1,5 +1,5 @@
 diff --git a/riscv/csrs.cc b/riscv/csrs.cc
-index 7bf2d737..22276420 100644
+index 7bf2d73..2227642 100644
 --- a/riscv/csrs.cc
 +++ b/riscv/csrs.cc
 @@ -1692,3 +1692,13 @@ bool smcntrpmf_csr_t::unlogged_write(const reg_t val) noexcept {
@@ -18,7 +18,7 @@ index 7bf2d737..22276420 100644
 +}
 \ No newline at end of file
 diff --git a/riscv/csrs.h b/riscv/csrs.h
-index 887749a6..652a3e5e 100644
+index 887749a..652a3e5 100644
 --- a/riscv/csrs.h
 +++ b/riscv/csrs.h
 @@ -843,4 +843,19 @@ class smcntrpmf_csr_t : public masked_csr_t {
@@ -42,7 +42,7 @@ index 887749a6..652a3e5e 100644
 +
  #endif
 diff --git a/riscv/decode.h b/riscv/decode.h
-index cd1c0a12..0e05b2b0 100644
+index cd1c0a1..0e05b2b 100644
 --- a/riscv/decode.h
 +++ b/riscv/decode.h
 @@ -93,6 +93,8 @@ public:
@@ -55,7 +55,7 @@ index cd1c0a12..0e05b2b0 100644
    int64_t rvc_imm() { return x(2, 5) + (xs(12, 1) << 5); }
    int64_t rvc_zimm() { return x(2, 5) + (x(12, 1) << 5); }
 diff --git a/riscv/encoding.h b/riscv/encoding.h
-index 81d829cf..28409fe5 100644
+index 81d829c..a08659c 100644
 --- a/riscv/encoding.h
 +++ b/riscv/encoding.h
 @@ -4,7 +4,7 @@
@@ -185,7 +185,7 @@ index 81d829cf..28409fe5 100644
  #define CSR_SEED 0x15
  #define CSR_JVT 0x17
  #define CSR_CYCLE 0xc00
-@@ -3417,6 +3451,14 @@
+@@ -3417,6 +3451,22 @@
  #define CSR_MHARTID 0xf14
  #define CSR_MCONFIGPTR 0xf15
  #define CSR_MTOPI 0xfb0
@@ -197,10 +197,18 @@ index 81d829cf..28409fe5 100644
 +#define CSR_SCRAKEYH 0x5f3
 +#define CSR_SCRBKEYL 0x5f4
 +#define CSR_SCRBKEYH 0x5f5
++#define CSR_SCRCKEYL 0x5f6
++#define CSR_SCRCKEYH 0x5f7
++#define CSR_SCRDKEYL 0x5f8
++#define CSR_SCRDKEYH 0x5f9
++#define CSR_SCREKEYL 0x5fa
++#define CSR_SCREKEYH 0x5fb
++#define CSR_SCRFKEYL 0x5fc
++#define CSR_SCRFKEYH 0x5fd
  #define CSR_SIEH 0x114
  #define CSR_SIPH 0x154
  #define CSR_STIMECMPH 0x15d
-@@ -3560,6 +3602,8 @@
+@@ -3560,6 +3610,8 @@
  #define CAUSE_FETCH_PAGE_FAULT 0xc
  #define CAUSE_LOAD_PAGE_FAULT 0xd
  #define CAUSE_STORE_PAGE_FAULT 0xf
@@ -209,7 +217,7 @@ index 81d829cf..28409fe5 100644
  #define CAUSE_FETCH_GUEST_PAGE_FAULT 0x14
  #define CAUSE_LOAD_GUEST_PAGE_FAULT 0x15
  #define CAUSE_VIRTUAL_INSTRUCTION 0x16
-@@ -3823,6 +3867,8 @@ DECLARE_INSN(c_sq, MATCH_C_SQ, MASK_C_SQ)
+@@ -3823,6 +3875,8 @@ DECLARE_INSN(c_sq, MATCH_C_SQ, MASK_C_SQ)
  DECLARE_INSN(c_sqsp, MATCH_C_SQSP, MASK_C_SQSP)
  DECLARE_INSN(c_srai, MATCH_C_SRAI, MASK_C_SRAI)
  DECLARE_INSN(c_srli, MATCH_C_SRLI, MASK_C_SRLI)
@@ -218,7 +226,7 @@ index 81d829cf..28409fe5 100644
  DECLARE_INSN(c_sub, MATCH_C_SUB, MASK_C_SUB)
  DECLARE_INSN(c_subw, MATCH_C_SUBW, MASK_C_SUBW)
  DECLARE_INSN(c_sw, MATCH_C_SW, MASK_C_SW)
-@@ -3869,6 +3915,8 @@ DECLARE_INSN(crc32c_b, MATCH_CRC32C_B, MASK_CRC32C_B)
+@@ -3869,6 +3923,8 @@ DECLARE_INSN(crc32c_b, MATCH_CRC32C_B, MASK_CRC32C_B)
  DECLARE_INSN(crc32c_d, MATCH_CRC32C_D, MASK_CRC32C_D)
  DECLARE_INSN(crc32c_h, MATCH_CRC32C_H, MASK_CRC32C_H)
  DECLARE_INSN(crc32c_w, MATCH_CRC32C_W, MASK_CRC32C_W)
@@ -227,7 +235,7 @@ index 81d829cf..28409fe5 100644
  DECLARE_INSN(crsa16, MATCH_CRSA16, MASK_CRSA16)
  DECLARE_INSN(crsa32, MATCH_CRSA32, MASK_CRSA32)
  DECLARE_INSN(csrrc, MATCH_CSRRC, MASK_CSRRC)
-@@ -4477,6 +4525,13 @@ DECLARE_INSN(sro, MATCH_SRO, MASK_SRO)
+@@ -4477,6 +4533,13 @@ DECLARE_INSN(sro, MATCH_SRO, MASK_SRO)
  DECLARE_INSN(sroi, MATCH_SROI, MASK_SROI)
  DECLARE_INSN(sroiw, MATCH_SROIW, MASK_SROIW)
  DECLARE_INSN(srow, MATCH_SROW, MASK_SROW)
@@ -241,7 +249,7 @@ index 81d829cf..28409fe5 100644
  DECLARE_INSN(stas16, MATCH_STAS16, MASK_STAS16)
  DECLARE_INSN(stas32, MATCH_STAS32, MASK_STAS32)
  DECLARE_INSN(stsa16, MATCH_STSA16, MASK_STSA16)
-@@ -5038,6 +5093,7 @@ DECLARE_CSR(vstart, CSR_VSTART)
+@@ -5038,6 +5101,7 @@ DECLARE_CSR(vstart, CSR_VSTART)
  DECLARE_CSR(vxsat, CSR_VXSAT)
  DECLARE_CSR(vxrm, CSR_VXRM)
  DECLARE_CSR(vcsr, CSR_VCSR)
@@ -249,7 +257,7 @@ index 81d829cf..28409fe5 100644
  DECLARE_CSR(seed, CSR_SEED)
  DECLARE_CSR(jvt, CSR_JVT)
  DECLARE_CSR(cycle, CSR_CYCLE)
-@@ -5353,6 +5409,14 @@ DECLARE_CSR(mimpid, CSR_MIMPID)
+@@ -5353,6 +5417,22 @@ DECLARE_CSR(mimpid, CSR_MIMPID)
  DECLARE_CSR(mhartid, CSR_MHARTID)
  DECLARE_CSR(mconfigptr, CSR_MCONFIGPTR)
  DECLARE_CSR(mtopi, CSR_MTOPI)
@@ -261,10 +269,18 @@ index 81d829cf..28409fe5 100644
 +DECLARE_CSR(scrakeyh, CSR_SCRAKEYH)
 +DECLARE_CSR(scrbkeyl, CSR_SCRBKEYL)
 +DECLARE_CSR(scrbkeyh, CSR_SCRBKEYH)
++DECLARE_CSR(scrckeyl, CSR_SCRCKEYL)
++DECLARE_CSR(scrckeyh, CSR_SCRCKEYH)
++DECLARE_CSR(scrdkeyl, CSR_SCRDKEYL)
++DECLARE_CSR(scrdkeyh, CSR_SCRDKEYH)
++DECLARE_CSR(screkeyl, CSR_SCREKEYL)
++DECLARE_CSR(screkeyh, CSR_SCREKEYH)
++DECLARE_CSR(scrfkeyl, CSR_SCRFKEYL)
++DECLARE_CSR(scrfkeyh, CSR_SCRFKEYH)
  DECLARE_CSR(sieh, CSR_SIEH)
  DECLARE_CSR(siph, CSR_SIPH)
  DECLARE_CSR(stimecmph, CSR_STIMECMPH)
-@@ -5497,6 +5561,8 @@ DECLARE_CAUSE("machine_ecall", CAUSE_MACHINE_ECALL)
+@@ -5497,6 +5577,8 @@ DECLARE_CAUSE("machine_ecall", CAUSE_MACHINE_ECALL)
  DECLARE_CAUSE("fetch page fault", CAUSE_FETCH_PAGE_FAULT)
  DECLARE_CAUSE("load page fault", CAUSE_LOAD_PAGE_FAULT)
  DECLARE_CAUSE("store page fault", CAUSE_STORE_PAGE_FAULT)
@@ -274,7 +290,7 @@ index 81d829cf..28409fe5 100644
  DECLARE_CAUSE("load guest page fault", CAUSE_LOAD_GUEST_PAGE_FAULT)
  DECLARE_CAUSE("virtual instruction", CAUSE_VIRTUAL_INSTRUCTION)
 diff --git a/riscv/insn_template.h b/riscv/insn_template.h
-index cead6d7d..2f2112ad 100644
+index cead6d7..2f2112a 100644
 --- a/riscv/insn_template.h
 +++ b/riscv/insn_template.h
 @@ -9,4 +9,5 @@
@@ -285,10 +301,10 @@ index cead6d7d..2f2112ad 100644
  #include <assert.h>
 diff --git a/riscv/insns/crdxk.h b/riscv/insns/crdxk.h
 new file mode 100644
-index 00000000..8a084bc9
+index 0000000..dd3bb5a
 --- /dev/null
 +++ b/riscv/insns/crdxk.h
-@@ -0,0 +1,57 @@
+@@ -0,0 +1,78 @@
 +// #include "qarma.h"
 +uint64_t sel_key = insn.rm();
 +uint64_t startbit = insn.rgvlt_startb() * 8;
@@ -327,6 +343,26 @@ index 00000000..8a084bc9
 +    keyl = 0x5F4;
 +    keyh = 0x5F5;
 +    break;
++case 4:
++    /* sckey */
++    keyl = 0x5F6;
++    keyh = 0x5F7;
++    break;
++case 5:
++    /* sdkey */
++    keyl = 0x5F8;
++    keyh = 0x5F9;
++    break;
++case 6:
++    /* sekey */
++    keyl = 0x5Fa;
++    keyh = 0x5Fb;
++    break;
++case 7:
++    /* sfkey */
++    keyl = 0x5Fc;
++    keyh = 0x5Fd;
++    break;
 +
 +default:
 +    throw trap_illegal_instruction(insn.bits());
@@ -339,8 +375,9 @@ index 00000000..8a084bc9
 +uint64_t k0 = sext_xlen(p->get_csr(keyl, insn, false));
 +uint64_t plain = qarma64_dec(cipher, tweak, w0, k0, round);
 +
-+uint64_t mask = ~((((uint64_t)1 << totbits) - 1) << startbit);
-+uint64_t text = plain | mask;
++uint64_t mask = totbits == 64 ? ~(uint64_t)0 :\
++    ((((uint64_t)1 << totbits) - 1) << startbit);
++uint64_t text = plain & mask;
 +
 +if (text != plain)
 +    throw trap_illegal_instruction(insn.bits());
@@ -348,10 +385,10 @@ index 00000000..8a084bc9
 +WRITE_RD(plain);
 diff --git a/riscv/insns/crexk.h b/riscv/insns/crexk.h
 new file mode 100644
-index 00000000..1ba62011
+index 0000000..79b1c50
 --- /dev/null
 +++ b/riscv/insns/crexk.h
-@@ -0,0 +1,53 @@
+@@ -0,0 +1,74 @@
 +// #include "qarma.h"
 +uint64_t sel_key = insn.rm();
 +uint64_t startbit = insn.rgvlt_startb() * 8;
@@ -361,9 +398,10 @@ index 00000000..1ba62011
 +    throw trap_illegal_instruction(insn.bits());
 +
 +uint64_t totbits = endbit - startbit + 1;
-+uint64_t mask = ~((((uint64_t)1 << totbits) - 1) << startbit);
++uint64_t mask = totbits == 64 ? ~(uint64_t)0 :\
++    ((((uint64_t)1 << totbits) - 1) << startbit);
 +uint64_t plain = RS1;
-+uint64_t text = plain | mask;
++uint64_t text = plain & mask;
 +
 +uint64_t tweak = RS2;
 +
@@ -393,6 +431,26 @@ index 00000000..1ba62011
 +    keyl = 0x5F4;
 +    keyh = 0x5F5;
 +    break;
++case 4:
++    /* sckey */
++    keyl = 0x5F6;
++    keyh = 0x5F7;
++    break;
++case 5:
++    /* sdkey */
++    keyl = 0x5F8;
++    keyh = 0x5F9;
++    break;
++case 6:
++    /* sekey */
++    keyl = 0x5Fa;
++    keyh = 0x5Fb;
++    break;
++case 7:
++    /* sfkey */
++    keyl = 0x5Fc;
++    keyh = 0x5Fd;
++    break;
 +
 +default:
 +    throw trap_illegal_instruction(insn.bits());
@@ -406,10 +464,10 @@ index 00000000..1ba62011
 +uint64_t cipher = qarma64_enc(text, tweak, w0, k0, round);
 +WRITE_RD(cipher);
 diff --git a/riscv/processor.cc b/riscv/processor.cc
-index 0ac6e67c..e89f9408 100644
+index 0ac6e67..2ffe6a3 100644
 --- a/riscv/processor.cc
 +++ b/riscv/processor.cc
-@@ -585,6 +585,15 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
+@@ -585,6 +585,23 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
        }
    }
  
@@ -419,6 +477,14 @@ index 0ac6e67c..e89f9408 100644
 +  csrmap[CSR_SCRAKEYL] = std::make_shared<key_csr_t>(proc, CSR_SCRAKEYL, 0);
 +  csrmap[CSR_SCRBKEYH] = std::make_shared<key_csr_t>(proc, CSR_SCRBKEYH, 0);
 +  csrmap[CSR_SCRBKEYL] = std::make_shared<key_csr_t>(proc, CSR_SCRBKEYL, 0);
++  csrmap[CSR_SCRCKEYH] = std::make_shared<key_csr_t>(proc, CSR_SCRCKEYH, 0);
++  csrmap[CSR_SCRCKEYL] = std::make_shared<key_csr_t>(proc, CSR_SCRCKEYL, 0);
++  csrmap[CSR_SCRDKEYH] = std::make_shared<key_csr_t>(proc, CSR_SCRDKEYH, 0);
++  csrmap[CSR_SCRDKEYL] = std::make_shared<key_csr_t>(proc, CSR_SCRDKEYL, 0);
++  csrmap[CSR_SCREKEYH] = std::make_shared<key_csr_t>(proc, CSR_SCREKEYH, 0);
++  csrmap[CSR_SCREKEYL] = std::make_shared<key_csr_t>(proc, CSR_SCREKEYL, 0);
++  csrmap[CSR_SCRFKEYH] = std::make_shared<key_csr_t>(proc, CSR_SCRFKEYH, 0);
++  csrmap[CSR_SCRFKEYL] = std::make_shared<key_csr_t>(proc, CSR_SCRFKEYL, 0);
 +  csrmap[CSR_SCRTKEYH] = std::make_shared<key_csr_t>(proc, CSR_SCRTKEYH, 0);
 +  csrmap[CSR_SCRTKEYL] = std::make_shared<key_csr_t>(proc, CSR_SCRTKEYL, 0);
 +
@@ -426,10 +492,10 @@ index 0ac6e67c..e89f9408 100644
  
    log_reg_write.clear();
 diff --git a/riscv/processor.h b/riscv/processor.h
-index a2e42865..4249fb4e 100644
+index a2e4286..44419ab 100644
 --- a/riscv/processor.h
 +++ b/riscv/processor.h
-@@ -111,6 +111,14 @@ struct state_t
+@@ -111,6 +111,22 @@ struct state_t
    csr_t_p stvec;
    virtualized_csr_t_p satp;
    csr_t_p scause;
@@ -439,6 +505,14 @@ index a2e42865..4249fb4e 100644
 +  csr_t_p scrakeyl;
 +  csr_t_p scrbkeyh;
 +  csr_t_p scrbkeyl;
++  csr_t_p scrckeyh;
++  csr_t_p scrckeyl;
++  csr_t_p scrdkeyh;
++  csr_t_p scrdkeyl;
++  csr_t_p screkeyh;
++  csr_t_p screkeyl;
++  csr_t_p scrfkeyh;
++  csr_t_p scrfkeyl;
 +  csr_t_p scrtkeyh;
 +  csr_t_p scrtkeyl;
  
@@ -446,7 +520,7 @@ index a2e42865..4249fb4e 100644
    csr_t_p nonvirtual_stvec;
 diff --git a/riscv/qarma.cc b/riscv/qarma.cc
 new file mode 100644
-index 00000000..83aa52f5
+index 0000000..83aa52f
 --- /dev/null
 +++ b/riscv/qarma.cc
 @@ -0,0 +1,303 @@
@@ -756,7 +830,7 @@ index 00000000..83aa52f5
 \ No newline at end of file
 diff --git a/riscv/qarma.h b/riscv/qarma.h
 new file mode 100644
-index 00000000..aa02ef6a
+index 0000000..aa02ef6
 --- /dev/null
 +++ b/riscv/qarma.h
 @@ -0,0 +1,35 @@
@@ -797,7 +871,7 @@ index 00000000..aa02ef6a
 +#endif
 \ No newline at end of file
 diff --git a/riscv/riscv.mk.in b/riscv/riscv.mk.in
-index 76c2ed7c..b3cfcd4e 100644
+index 76c2ed7..b3cfcd4 100644
 --- a/riscv/riscv.mk.in
 +++ b/riscv/riscv.mk.in
 @@ -44,6 +44,7 @@ riscv_install_hdrs = \
