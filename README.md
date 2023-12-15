@@ -200,4 +200,49 @@ Requesting system poweroff
 [   14.925145] reboot: Power down
 ```
 
+6. Debug
+	You can use the openocd to debug our FPGA by the following openocd configuration file `conf/starship.cfg`
+	```
+		adapter speed 1000
+		adapter driver ftdi
+		ftdi vid_pid 0x0403 0x6010
+		ftdi channel 0
+		ftdi layout_init 0x00e8 0x60eb
+		reset_config none
+		transport select jtag
+		set _CHIPNAME riscv
+		jtag newtap $_CHIPNAME cpu -irlen 5
+
+		set _TARGETNAME $_CHIPNAME.cpu
+
+		target create $_TARGETNAME.0 riscv -chain-position $_TARGETNAME
+		$_TARGETNAME.0 configure -work-area-phys 0x80000000 -work-area-size 10000 -work-area-backup 1
+		riscv use_bscan_tunnel 0
+	```
+	
+	This configuration has been proved validly on VC707 and FTDI2332. 
+	The vid_pid is the vendor id and product id of the FTDI device, and you can get this paramter by run `lsusb`
+	The ftdi channel is the channel id of the jtag channel while the ftdi USB device has 4 channel
+	If your connection between jtag port and debug board is correct, when you run `openocd -f conf/starship.cfg`, the following output means your openocd connects the fpga debug module successfully.
+	```
+		Open On-Chip Debugger 0.12.0+dev-g4559b4790 (2023-12-14-15:22)
+		Licensed under GNU GPL v2
+		For bug reports, read
+				http://openocd.org/doc/doxygen/bugs.html
+		Info : Nested Tap based Bscan Tunnel Selected
+		Info : Listening on port 6666 for tcl connections
+		Info : Listening on port 4444 for telnet connections
+		Info : clock speed 1000 kHz
+		Info : JTAG tap: riscv.cpu tap/device found: 0x00000001 (mfg: 0x000 (<invalid>), part: 0x0000, ver: 0x0)
+		Info : [riscv.cpu.0] datacount=2 progbufsize=16
+		Info : [riscv.cpu.0] Disabling abstract command reads from CSRs.
+		Info : [riscv.cpu.0] Disabling abstract command writes to CSRs.
+		Info : [riscv.cpu.0] Examined RISC-V core; found 1 harts
+		Info : [riscv.cpu.0]  XLEN=64, misa=0x800000000094112d
+		[riscv.cpu.0] Target successfully examined.
+		Info : starting gdb server for riscv.cpu.0 on 3333
+		Info : Listening on port 3333 for gdb connections
+	```
+	Then you can use gdb to debug fpga by remote connecting the 3333 port.
+
 Finally, if you have any suggestions for this SDK, please *push* it !
