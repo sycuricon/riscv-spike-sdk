@@ -100,7 +100,7 @@ $(buildroot_initramfs_sysroot): $(buildroot_initramfs_tar)
 	mkdir -p $(buildroot_initramfs_sysroot)
 	tar -xpf $< -C $(buildroot_initramfs_sysroot) --exclude ./dev --exclude ./usr/share/locale
 
-$(linux_wrkdir)/.config: $(linux_defconfig) $(linux_srcdir)
+$(linux_wrkdir)/.config: $(toolchain_dest)/bin/$(target_linux)-gcc $(linux_defconfig) $(linux_srcdir)
 	mkdir -p $(dir $@)
 	cp -p $< $@
 	$(MAKE) -C $(linux_srcdir) O=$(linux_wrkdir) ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- olddefconfig
