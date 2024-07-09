@@ -54,7 +54,7 @@ target_linux  := riscv64-unknown-linux-gnu
 target_newlib := riscv64-unknown-elf
 
 .PHONY: all
-all: sim
+all: spike
 
 newlib: $(RISCV)/bin/$(target_newlib)-gcc
 
@@ -100,7 +100,7 @@ $(buildroot_initramfs_sysroot): $(buildroot_initramfs_tar)
 	mkdir -p $(buildroot_initramfs_sysroot)
 	tar -xpf $< -C $(buildroot_initramfs_sysroot) --exclude ./dev --exclude ./usr/share/locale
 
-$(linux_wrkdir)/.config: $(toolchain_dest)/bin/$(target_linux)-gcc $(linux_defconfig) $(linux_srcdir)
+$(linux_wrkdir)/.config: $(linux_defconfig) $(linux_srcdir) $(toolchain_dest)/bin/$(target_linux)-gcc
 	mkdir -p $(dir $@)
 	cp -p $< $@
 	$(MAKE) -C $(linux_srcdir) O=$(linux_wrkdir) ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- olddefconfig
@@ -136,7 +136,7 @@ linux-menuconfig: $(linux_wrkdir)/.config
 	$(MAKE) -C $(linux_srcdir) O=$(dir $<) ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- savedefconfig
 	# cp $(dir $<)/defconfig conf/linux_defconfig
 
-$(bbl): $(pk_srcdir) $(vmlinux_stripped)
+$(bbl): $(pk_srcdir) $(vmlinux_stripped) $(DTS)
 	rm -rf $(pk_wrkdir)
 	mkdir -p $(pk_wrkdir)
 	cd $(pk_wrkdir) && $</configure \
@@ -198,21 +198,27 @@ clean:
 mrproper:
 	rm -rf -- $(wrkdir) $(toolchain_dest) $(topdir)/rootfs
 
+.PHONY: spike qemu
+
 ifeq ($(BL),opensbi)
-.PHONY: sim
-sim: $(fw_jump) $(spike)
-	$(spike) --isa=$(ISA) -p4 --kernel $(linux_image) $(fw_jump)
-.PHONY: qemu
+spike: $(fw_jump) $(spike)
+	$(spike) --isa=$(ISA)_zicntr_zihpm --kernel $(linux_image) $(fw_jump)
+
 qemu: $(qemu) $(fw_jump)
-	$(qemu) -nographic -machine virt -cpu rv64,sv57=on -bios $(fw_jump) -kernel $(linux_image)
+	$(qemu) -nographic -machine virt -cpu rv64,sv57=on -m 2048M -bios $(fw_jump) -kernel $(linux_image)
+
+qemu-debug: $(qemu) $(fw_jump)
+	$(qemu) -nographic -machine virt -cpu rv64,sv57=on -m 2048M -bios $(fw_jump) -kernel $(linux_image) -s -S
+
 else ifeq ($(BL),bbl)
-.PHONY: sim
-sim: $(bbl) $(spike)
+spike: $(bbl) $(spike)
 	$(spike) --isa=$(ISA)_zicntr_zihpm $(bbl)
 
-.PHONY: qemu
 qemu: $(qemu) $(bbl)
 	$(qemu) -nographic -machine virt -cpu rv64,sv57=on -m 2048M -bios $(bbl)
+
+qemu-debug: $(qemu) $(bbl)
+	$(qemu) -nographic -machine virt -cpu rv64,sv57=on -m 2048M -bios $(bbl) -s -S
 endif
 
 SD_CARD ?= /dev/sdb
