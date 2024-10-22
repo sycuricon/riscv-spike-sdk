@@ -14,15 +14,15 @@ This SDK follows the newest Linux Kernel, GNU toolchain and Spike, the functions
 
 |       Folder        |      Description       |   Version   |
 | :-----------------: | :--------------------: | :---------: |
-|    repo/buildroot    |    Build initramfs     |  2023.8.x  |
-|      repo/linux      |      Linux Kernel      |    6.6.2    |
-| repo/riscv-gnu-toolchain | GNU Compiler Toolchain |  gcc 13.2.0 ld 2.41  |
+|    repo/buildroot    |    Build initramfs     |  2024.08  |
+|      repo/linux      |      Linux Kernel      |    6.11.4    |
+| repo/riscv-gnu-toolchain | GNU Compiler Toolchain |  gcc 14.2.0 ld 2.43.1  |
 | repo/riscv-(isa-sim,pk)  | Simulator & Bootloader |    master   |
-| repo/opensbi  | Supervisor / Bootloader |    master   |
+| repo/opensbi  | Supervisor / Bootloader |    v1.5.1   |
 |         conf        |     config for SDK     |             |
 
 ## Quickstart
-Build dependencies on Ubuntu 16.04/18.04:
+Build dependencies on Ubuntu 18.04/20.04:
 ```bash
 $ sudo apt-get install device-tree-compiler autoconf automake autotools-dev    \
 curl libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo \
