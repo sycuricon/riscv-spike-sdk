@@ -9,7 +9,7 @@
 		serial0 = &L10;
 	};
 	L13: chosen {
-		bootargs = "nokaslr noinitrd console=hvc0 root=/dev/mmcblk0p2 rootwait rw";
+		bootargs = "nokaslr console=hvc0";
 	};
 	L17: cpus {
 		#address-cells = <1>;
@@ -30,7 +30,7 @@
 			i-cache-size = <16384>;
 			i-tlb-sets = <1>;
 			i-tlb-size = <32>;
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			next-level-cache = <&L12>;
 			reg = <0x0>;
 			riscv,isa = "rv64imafdc";
@@ -50,6 +50,21 @@
 		device_type = "memory";
 		reg = <0x80000000 0x40000000>;
 	};
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		mmode_resv1@80020000 {
+				reg = <0x80020000 0x20000>;
+				no-map;
+		};
+
+		mmode_resv0@80000000 {
+				reg = <0x80000000 0x20000>;
+				no-map;
+		};
+  	};
 	L16: soc {
 		#address-cells = <1>;
 		#size-cells = <1>;
