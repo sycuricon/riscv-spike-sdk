@@ -50,6 +50,10 @@ qemu_srcdir := $(srcdir)/riscv-gnu-toolchain/qemu
 qemu_wrkdir := $(wrkdir)/qemu
 qemu :=  $(toolchain_dest)/bin/qemu-system-riscv64
 
+openocd_srcdir := $(srcdir)/riscv-openocd
+openocd_wrkdir := $(wrkdir)/riscv-openocd
+openocd := $(toolchain_dest)/bin/openocd
+
 target_linux  := riscv64-unknown-linux-gnu
 target_newlib := riscv64-unknown-elf
 
@@ -184,12 +188,25 @@ $(qemu): $(qemu_srcdir)
 	$(MAKE) -C $(qemu_wrkdir) install
 	touch -c $@
 
+$(openocd): $(openocd_srcdir)
+	rm -rf $(openocd_wrkdir)
+	mkdir -p $(openocd_wrkdir)
+	mkdir -p $(dir $@)
+	cd $(openocd_srcdir) && $</bootstrap
+	cd $(openocd_wrkdir) && $</configure \
+		--enable-remote-bitbang \
+		--prefix=$(dir $(abspath $(dir $@)))
+	$(MAKE) -C $(openocd_wrkdir)
+	$(MAKE) -C $(openocd_wrkdir) install
+	touch -c $@
 
-.PHONY: buildroot_initramfs_sysroot vmlinux bbl fw_jump
+
+.PHONY: buildroot_initramfs_sysroot vmlinux bbl fw_jump openocd
 buildroot_initramfs_sysroot: $(buildroot_initramfs_sysroot)
 vmlinux: $(vmlinux)
 bbl: $(bbl)
 fw_image: $(fw_jump)
+openocd: $(openocd)
 
 .PHONY: clean mrproper
 clean:
