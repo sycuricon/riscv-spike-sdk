@@ -6,6 +6,7 @@ ISA ?= rv64imafdc_zifencei_zicsr
 ABI ?= lp64d
 BL ?= bbl
 BOARD ?= spike
+CMAKE := cmake
 
 topdir := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 topdir := $(topdir:/=)
@@ -31,6 +32,13 @@ linux_defconfig := $(confdir)/linux_defconfig
 vmlinux := $(linux_wrkdir)/vmlinux
 vmlinux_stripped := $(linux_wrkdir)/vmlinux-stripped
 linux_image := $(linux_wrkdir)/arch/riscv/boot/Image
+
+prot ?= none
+KBUILD_CFLAGS_KERNEL-none     := -g -fexperimental-new-pass-manager
+KBUILD_CFLAGS_KERNEL-fp       := $(KBUILD_CFLAGS_KERNEL-none) -mfpscan
+KBUILD_CFLAGS_KERNEL-ra       := $(KBUILD_CFLAGS_KERNEL-none) -mllvm -ppp-rap
+KBUILD_CFLAGS_KERNEL-non-ctrl := $(KBUILD_CFLAGS_KERNEL-none) -mrandcont
+KBUILD_CFLAGS_KERNEL-full     := $(KBUILD_CFLAGS_KERNEL-none) -mfpscan -mrandcont -mllvm -ppp-rap
 
 DTS ?= $(abspath conf/$(BOARD).dts)
 pk_srcdir := $(srcdir)/riscv-pk
@@ -81,6 +89,30 @@ $(toolchain_dest)/bin/$(target_newlib)-gcc:
 		--enable-multilib
 	$(MAKE) -C $(toolchain_wrkdir) 
 
+llvm_srcdir	 :=	$(toolchain_srcdir)/llvm
+llvm_wrkdir	 :=	$(wrkdir)/llvm
+llvm_sysroot :=	$(toolchain_dest)/sysroot
+LLVM_VERSION :=  Release
+clang        := $(toolchain_dest)/bin/clang
+opt          := $(toolchain_dest)/bin/opt
+
+.PHONY: llvm
+$(clang): $(llvm_srcdir)
+	mkdir -p $(llvm_wrkdir) $(toolchain_dest)
+	cd $(llvm_wrkdir); $(CMAKE) -G Ninja -DLLVM_ENABLE_PROJECTS="clang" \
+		-DCMAKE_BUILD_TYPE:String=$(LLVM_VERSION)  -DLLVM_ENABLE_ASSERTIONS=True \
+		-DLLVM_USE_SPLIT_DWARF=True \
+		-DLLVM_OPTIMIZED_TABLEGEN=True \
+		-DCMAKE_INSTALL_PREFIX=$(toolchain_dest) \
+		-DLLVM_DEFAULT_TARGET_TRIPLE=riscv64-unknown-linux-gnu \
+		-DLLVM_TARGETS_TO_BUILD="RISCV" \
+		$(llvm_srcdir)/llvm
+		# -DDEFAULT_SYSROOT=$(llvm_sysroot) \
+	free -h
+	$(CMAKE) --build $(llvm_wrkdir) --target install
+
+llvm: $(clang)
+
 $(buildroot_initramfs_wrkdir)/.config: $(buildroot_srcdir)
 	rm -rf $(dir $@)
 	mkdir -p $(dir $@)
@@ -116,19 +148,32 @@ ifeq ($(ISA),$(filter rv32%,$(ISA)))
 	$(MAKE) -C $(linux_srcdir) O=$(linux_wrkdir) ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- olddefconfig
 endif
 
-$(vmlinux): $(linux_srcdir) $(linux_wrkdir)/.config $(buildroot_initramfs_sysroot) 
+.PHONY: linux
+# $(vmlinux): $(linux_srcdir) $(linux_wrkdir)/.config $(buildroot_initramfs_sysroot) 
+# 	$(MAKE) -C $< O=$(linux_wrkdir) \
+# 		CONFIG_INITRAMFS_SOURCE="$(confdir)/initramfs.txt $(buildroot_initramfs_sysroot)" \
+# 		CONFIG_INITRAMFS_ROOT_UID=$(shell id -u) \
+# 		CONFIG_INITRAMFS_ROOT_GID=$(shell id -g) \
+# 		CROSS_COMPILE=riscv64-unknown-linux-gnu- \
+# 		ARCH=riscv \
+# 		all
+$(vmlinux): $(linux_srcdir) $(buildroot_initramfs_sysroot)
+	mkdir -p $(linux_wrkdir)
+	cp $(confdir)/6.6.2-config $(linux_wrkdir)/.config
 	$(MAKE) -C $< O=$(linux_wrkdir) \
 		CONFIG_INITRAMFS_SOURCE="$(confdir)/initramfs.txt $(buildroot_initramfs_sysroot)" \
 		CONFIG_INITRAMFS_ROOT_UID=$(shell id -u) \
 		CONFIG_INITRAMFS_ROOT_GID=$(shell id -g) \
 		CROSS_COMPILE=riscv64-unknown-linux-gnu- \
 		ARCH=riscv \
+		CC=clang KBUILD_CFLAGS_KERNEL="$(KBUILD_CFLAGS_KERNEL-$(prot))" LLVM_IAS=1 \
 		all
 
 $(vmlinux_stripped): $(vmlinux)
 	$(target_linux)-strip -o $@ $<
 
 $(linux_image): $(vmlinux)
+linux: $(linux_image)
 
 .PHONY: linux-menuconfig
 linux-menuconfig: $(linux_wrkdir)/.config
