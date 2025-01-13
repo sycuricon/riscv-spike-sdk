@@ -1,6 +1,6 @@
 # RISCV should either be unset, or set to point to a directory that contains
 # a toolchain install tree that was built via other means.
-RISCV ?= $(CURDIR)/toolchain
+export RISCV ?= $(CURDIR)/toolchain
 PATH := $(RISCV)/bin:$(PATH)
 ISA ?= rv64imafdc_zifencei_zicsr
 ABI ?= lp64d
@@ -56,6 +56,13 @@ openocd := $(toolchain_dest)/bin/openocd
 
 target_linux  := riscv64-unknown-linux-gnu
 target_newlib := riscv64-unknown-elf
+
+benchmark_srcdir	:= $(CURDIR)/benchmark
+benchmark_wrkdir    := $(wrkdir)/benchmark
+benchmark_scripts   := $(benchmark_srcdir)/scripts
+benchmark_patch		:= $(benchmark_srcdir)/patch
+unixbench_srcdir := $(benchmark_srcdir)/byte-unixbenchmark/UnixBench
+unixbench_wrkdir := $(benchmark_wrkdir)/UnixBench
 
 .PHONY: all
 all: spike
@@ -200,6 +207,13 @@ $(openocd): $(openocd_srcdir)
 	$(MAKE) -C $(openocd_wrkdir) install
 	touch -c $@
 
+$(unixbench_wrkdir):$(unixbench_srcdir)
+	rm -rf $(unixbench_wrkdir) 
+	mkdir -p $(unixbench_wrkdir) 
+	make -C $(unixbench_srcdir) clean
+	make -C $(unixbench_srcdir)
+	cp $(unixbench_srcdir)/pgms/* $(unixbench_wrkdir)
+	cp $(benchmark_scripts)/UnixBench.sh $(unixbench_wrkdir)
 
 .PHONY: buildroot_initramfs_sysroot vmlinux bbl fw_jump openocd
 buildroot_initramfs_sysroot: $(buildroot_initramfs_sysroot)
@@ -207,6 +221,12 @@ vmlinux: $(vmlinux)
 bbl: $(bbl)
 fw_image: $(fw_jump)
 openocd: $(openocd)
+
+.PHONY: benchmark benchmark_patch
+benchmark: $(unixbench_wrkdir)
+
+benchmark_patch:$(benchmark_patch)
+	cd $(unixbench_srcdir); git apply $(benchmark_patch)/UnixBench.patch
 
 .PHONY: clean mrproper
 clean:

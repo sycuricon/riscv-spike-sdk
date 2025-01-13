@@ -22,3 +22,6 @@
 [submodule "benchmark/byte-unixbenchmark"]
 	path = benchmark/byte-unixbenchmark
 	url = https://github.com/kdlucas/byte-unixbench.git
+[submodule "benchmark/lmbench-3.0-a9"]
+	path = benchmark/lmbench-3.0-a9
+	url = https://github.com/docularxu/lmbench-3.0-a9.git
