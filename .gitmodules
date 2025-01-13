@@ -19,3 +19,6 @@
 [submodule "repo/riscv-openocd"]
 	path = repo/riscv-openocd
 	url = https://github.com/riscv-collab/riscv-openocd.git
+[submodule "benchmark/byte-unixbenchmark"]
+	path = benchmark/byte-unixbenchmark
+	url = https://github.com/kdlucas/byte-unixbench.git
