@@ -1,1 +1,9 @@
-#!/usr/bin/sh -w
+dhrystone 10
+whetstone 10
+execl 3
+pipe 10
+context 10
+spawn 3
+syscall 10
+shell1 3
+shell8 3
