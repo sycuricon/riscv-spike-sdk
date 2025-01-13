@@ -16,3 +16,6 @@
 [submodule "opensbi"]
 	path = repo/opensbi
 	url = https://github.com/riscv-software-src/opensbi
+[submodule "repo/riscv-openocd"]
+	path = repo/riscv-openocd
+	url = https://github.com/riscv-collab/riscv-openocd.git

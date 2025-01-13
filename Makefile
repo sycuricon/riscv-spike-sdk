@@ -58,11 +58,15 @@ qemu_srcdir := $(srcdir)/riscv-gnu-toolchain/qemu
 qemu_wrkdir := $(wrkdir)/qemu
 qemu :=  $(toolchain_dest)/bin/qemu-system-riscv64
 
+openocd_srcdir := $(srcdir)/riscv-openocd
+openocd_wrkdir := $(wrkdir)/riscv-openocd
+openocd := $(toolchain_dest)/bin/openocd
+
 target_linux  := riscv64-unknown-linux-gnu
 target_newlib := riscv64-unknown-elf
 
 .PHONY: all
-all: sim
+all: spike
 
 newlib: $(RISCV)/bin/$(target_newlib)-gcc
 
@@ -132,7 +136,7 @@ $(buildroot_initramfs_sysroot): $(buildroot_initramfs_tar)
 	mkdir -p $(buildroot_initramfs_sysroot)
 	tar -xpf $< -C $(buildroot_initramfs_sysroot) --exclude ./dev --exclude ./usr/share/locale
 
-$(linux_wrkdir)/.config: $(linux_defconfig) $(linux_srcdir)
+$(linux_wrkdir)/.config: $(linux_defconfig) $(linux_srcdir) $(toolchain_dest)/bin/$(target_linux)-gcc
 	mkdir -p $(dir $@)
 	cp -p $< $@
 	$(MAKE) -C $(linux_srcdir) O=$(linux_wrkdir) ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- olddefconfig
@@ -181,7 +185,7 @@ linux-menuconfig: $(linux_wrkdir)/.config
 	$(MAKE) -C $(linux_srcdir) O=$(dir $<) ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- savedefconfig
 	# cp $(dir $<)/defconfig conf/linux_defconfig
 
-$(bbl): $(pk_srcdir) $(vmlinux_stripped)
+$(bbl): $(pk_srcdir) $(vmlinux_stripped) $(DTS)
 	rm -rf $(pk_wrkdir)
 	mkdir -p $(pk_wrkdir)
 	cd $(pk_wrkdir) && $</configure \
@@ -205,7 +209,7 @@ $(pk): $(pk_srcdir) $(RISCV)/bin/$(target_newlib)-gcc
 $(fw_jump): $(opensbi_srcdir) $(linux_image) $(RISCV)/bin/$(target_linux)-gcc
 	rm -rf $(opensbi_wrkdir)
 	mkdir -p $(opensbi_wrkdir)
-	$(MAKE) -C $(opensbi_srcdir) FW_PAYLOAD_PATH=$(linux_image) PLATFORM=generic O=$(opensbi_wrkdir) CROSS_COMPILE=riscv64-unknown-linux-gnu-
+	$(MAKE) -C $(opensbi_srcdir) FW_TEXT_START=0x80000000 FW_PAYLOAD_PATH=$(linux_image) PLATFORM=generic O=$(opensbi_wrkdir) CROSS_COMPILE=riscv64-unknown-linux-gnu-
 
 $(spike): $(spike_srcdir) 
 	rm -rf $(spike_wrkdir)
@@ -229,12 +233,25 @@ $(qemu): $(qemu_srcdir)
 	$(MAKE) -C $(qemu_wrkdir) install
 	touch -c $@
 
+$(openocd): $(openocd_srcdir)
+	rm -rf $(openocd_wrkdir)
+	mkdir -p $(openocd_wrkdir)
+	mkdir -p $(dir $@)
+	cd $(openocd_srcdir) && $</bootstrap
+	cd $(openocd_wrkdir) && $</configure \
+		--enable-remote-bitbang \
+		--prefix=$(dir $(abspath $(dir $@)))
+	$(MAKE) -C $(openocd_wrkdir)
+	$(MAKE) -C $(openocd_wrkdir) install
+	touch -c $@
 
-.PHONY: buildroot_initramfs_sysroot vmlinux bbl fw_jump
+
+.PHONY: buildroot_initramfs_sysroot vmlinux bbl fw_jump openocd
 buildroot_initramfs_sysroot: $(buildroot_initramfs_sysroot)
 vmlinux: $(vmlinux)
 bbl: $(bbl)
 fw_image: $(fw_jump)
+openocd: $(openocd)
 
 .PHONY: clean mrproper
 clean:
@@ -243,21 +260,27 @@ clean:
 mrproper:
 	rm -rf -- $(wrkdir) $(toolchain_dest) $(topdir)/rootfs
 
+.PHONY: spike qemu
+
 ifeq ($(BL),opensbi)
-.PHONY: sim
-sim: $(fw_jump) $(spike)
-	$(spike) --isa=$(ISA) -p4 --kernel $(linux_image) $(fw_jump)
-.PHONY: qemu
+spike: $(fw_jump) $(spike)
+	$(spike) --isa=$(ISA)_zicntr_zihpm --kernel $(linux_image) $(fw_jump)
+
 qemu: $(qemu) $(fw_jump)
-	$(qemu) -nographic -machine virt -cpu rv64,sv57=on -bios $(fw_jump) -kernel $(linux_image)
+	$(qemu) -nographic -machine virt -cpu rv64,sv57=on -m 2048M -bios $(fw_jump) -kernel $(linux_image)
+
+qemu-debug: $(qemu) $(fw_jump)
+	$(qemu) -nographic -machine virt -cpu rv64,sv57=on -m 2048M -bios $(fw_jump) -kernel $(linux_image) -s -S
+
 else ifeq ($(BL),bbl)
-.PHONY: sim
-sim: $(bbl) $(spike)
+spike: $(bbl) $(spike)
 	$(spike) --isa=$(ISA)_zicntr_zihpm $(bbl)
 
-.PHONY: qemu
 qemu: $(qemu) $(bbl)
 	$(qemu) -nographic -machine virt -cpu rv64,sv57=on -m 2048M -bios $(bbl)
+
+qemu-debug: $(qemu) $(bbl)
+	$(qemu) -nographic -machine virt -cpu rv64,sv57=on -m 2048M -bios $(bbl) -s -S
 endif
 
 SD_CARD ?= /dev/sdb
