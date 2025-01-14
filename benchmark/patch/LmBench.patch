@@ -1,0 +1,271 @@
+diff --git a/scripts/build b/scripts/build
+index 34a1371..e82bde5 100755
+--- a/scripts/build
++++ b/scripts/build
+@@ -18,7 +18,7 @@ done
+ 
+ trap 'rm -f ${BASE}$$.s ${BASE}$$.c ${BASE}$$.o ${BASE}$$; exit 1' 1 2 15
+ 
+-LDLIBS=-lm
++LDLIBS="-ltirpc -lpthread -lm"
+ 
+ # check for HP-UX's ANSI compiler
+ echo "main(int ac, char *av[]) { int i; }" > ${BASE}$$.c
+diff --git a/scripts/compiler b/scripts/compiler
+index 9ce3b94..e22f4e6 100755
+--- a/scripts/compiler
++++ b/scripts/compiler
+@@ -13,4 +13,5 @@ then	CC=cc
+ 		fi
+ 	done
+ fi
++CC=${RISCV}/bin/riscv64-unknown-linux-gnu-gcc
+ echo $CC
+diff --git a/scripts/config-run b/scripts/config-run
+index f620c15..66c3b4a 100755
+--- a/scripts/config-run
++++ b/scripts/config-run
+@@ -197,37 +197,37 @@ The bigger the range, the more accurate the results, but larger sizes
+ take somewhat longer to run the benchmark.
+ 
+ EOF
+-echo $ECHON "MB [default $MB]: $ECHOC"
+-read TMP
+-if [ X$TMP != X ]
+-then	MB=$TMP
+-fi
+-# Certain machines tend to barf when you try and bcopy 8MB.
+-# Figure out how much we can use.
+-echo "Checking to see if you have $MB MB; please wait for a moment..."
+-MB=`../bin/$OS/memsize $MB`
+-MB=`../bin/$OS/memsize $MB`
+-MB=`../bin/$OS/memsize $MB`
+-if [ `expr $SYNC_MAX \* $MB` -gt `expr $TOTAL_MEM` ]
+-then
+-	MB=`expr $TOTAL_MEM / $SYNC_MAX`
+-	MB=`expr $MB / 2`
+-fi
+-if [ $MB -lt 8 ]
+-then    echo $0 aborted: Not enough memory, only ${MB}MB available. 
+-	exit 1
+-fi
+-if [ $MB -lt 16 ]
+-then	echo Warning: you have only ${MB}MB available memory. 
+-	echo Some benchmark results will be less meaningful. 
+-fi
+-
+-echo "Hang on, we are calculating your cache line size."
+-../bin/$OS/msleep 250
+-LINE_SIZE=`../bin/$OS/line -M ${MB}M`
+-export LINE_SIZE
+-echo "OK, it looks like your cache line is $LINE_SIZE bytes."
+-echo ""
++# echo $ECHON "MB [default $MB]: $ECHOC"
++# read TMP
++# if [ X$TMP != X ]
++# then	MB=$TMP
++# fi
++# # Certain machines tend to barf when you try and bcopy 8MB.
++# # Figure out how much we can use.
++# echo "Checking to see if you have $MB MB; please wait for a moment..."
++# MB=`../bin/$OS/memsize $MB`
++# MB=`../bin/$OS/memsize $MB`
++# MB=`../bin/$OS/memsize $MB`
++# if [ `expr $SYNC_MAX \* $MB` -gt `expr $TOTAL_MEM` ]
++# then
++# 	MB=`expr $TOTAL_MEM / $SYNC_MAX`
++# 	MB=`expr $MB / 2`
++# fi
++# if [ $MB -lt 8 ]
++# then    echo $0 aborted: Not enough memory, only ${MB}MB available.
++# 	exit 1
++# fi
++# if [ $MB -lt 16 ]
++# then	echo Warning: you have only ${MB}MB available memory.
++# 	echo Some benchmark results will be less meaningful.
++# fi
++
++# echo "Hang on, we are calculating your cache line size."
++# ../bin/$OS/msleep 250
++# LINE_SIZE=`../bin/$OS/line -M ${MB}M`
++# export LINE_SIZE
++# echo "OK, it looks like your cache line is $LINE_SIZE bytes."
++# echo ""
+ 
+ ############################################################################
+ # Benchmarking subsets
+diff --git a/scripts/os b/scripts/os
+index 31c1bcf..0a39bad 100755
+--- a/scripts/os
++++ b/scripts/os
+@@ -17,4 +17,5 @@ then	OS=bloat-os
+     then	OS=`../../scripts/gnu-os | sed s/unknown-//`
+     fi
+ fi
++OS=riscv-linux
+ echo $OS
+diff --git a/src/Makefile b/src/Makefile
+index 025e2b3..7d06171 100644
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -58,7 +58,7 @@ SAMPLES=lmbench/Results/aix/rs6000 lmbench/Results/hpux/snake \
+ 	lmbench/Results/irix/indigo2 lmbench/Results/linux/pentium \
+ 	lmbench/Results/osf1/alpha lmbench/Results/solaris/ss20* 
+ 
+-COMPILE=$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS)
++COMPILE=$(CC) $(CFLAGS) -Wall -O2 -ffunction-sections -Wl,--gc-sections -s -I$(RISCV)/sysroot/usr/include/tirpc $(CPPFLAGS) $(LDFLAGS)
+ 
+ INCS =	bench.h lib_mem.h lib_tcp.h lib_udp.h stats.h timing.h
+ 
+@@ -74,6 +74,7 @@ SRCS =  bw_file_rd.c bw_mem.c bw_mmap_rd.c bw_pipe.c bw_tcp.c bw_udp.c	\
+ 	lib_udp.c lib_unix.c lib_sched.c				\
+ 	line.c lmdd.c lmhttp.c par_mem.c par_ops.c loop_o.c memsize.c 	\
+ 	mhz.c msleep.c rhttp.c seek.c timing_o.c tlb.c stream.c		\
++	execute.c \
+ 	bench.h lib_debug.h lib_tcp.h lib_udp.h lib_unix.h names.h 	\
+ 	stats.h timing.h version.h
+ 
+@@ -103,7 +104,7 @@ EXES =	$O/bw_file_rd $O/bw_mem $O/bw_mmap_rd $O/bw_pipe $O/bw_tcp 	\
+ 	$O/msleep $O/loop_o $O/lat_fifo $O/lmhttp $O/lat_http		\
+ 	$O/lat_fcntl $O/disk $O/lat_unix_connect $O/flushdisk		\
+ 	$O/lat_ops $O/line $O/tlb $O/par_mem $O/par_ops 		\
+-	$O/stream
++	$O/stream $O/execute
+ OPT_EXES=$O/cache $O/lat_dram_page $O/lat_pmake $O/lat_rand 		\
+ 	$O/lat_usleep $O/lat_cmd
+ LIBOBJS= $O/lib_tcp.o $O/lib_udp.o $O/lib_unix.o $O/lib_timing.o 	\
+@@ -383,6 +384,9 @@ $O/lat_sig.s:lat_sig.c timing.h stats.h bench.h
+ $O/lat_sig:  lat_sig.c timing.h stats.h bench.h $O/lmbench.a
+ 	$(COMPILE) -o $O/lat_sig lat_sig.c $O/lmbench.a $(LDLIBS)
+ 
++$O/execute:
++	$(COMPILE) -o $O/execute execute.c
++
+ $O/lat_syscall.s:lat_syscall.c timing.h stats.h bench.h
+ $O/lat_syscall:  lat_syscall.c timing.h stats.h bench.h $O/lmbench.a
+ 	$(COMPILE) -o $O/lat_syscall lat_syscall.c $O/lmbench.a $(LDLIBS)
+diff --git a/src/bench.h b/src/bench.h
+index 597d068..54f4550 100644
+--- a/src/bench.h
++++ b/src/bench.h
+@@ -77,9 +77,9 @@ typedef long long int64;
+ #endif /* HAVE_int64_t */
+ #endif /* HAVE_int64 */
+ 
+-#ifndef HAVE_socklen_t
+-typedef int socklen_t;
+-#endif
++// #ifndef HAVE_socklen_t
++// typedef int socklen_t;
++// #endif
+ 
+ #ifndef HAVE_off64_t
+ typedef int64 off64_t;
+diff --git a/src/execute.c b/src/execute.c
+new file mode 100644
+index 0000000..b975ad8
+--- /dev/null
++++ b/src/execute.c
+@@ -0,0 +1,101 @@
++#include<stdio.h>
++#include<stdlib.h>
++#include<time.h>
++
++typedef struct task{
++    const char* task_name;
++    const char* program_path;
++    const char* program_args;
++    const int sample_number;
++    const char* log_filename;
++}* Task;
++
++void execute_task(Task task){
++    char command_buf[100];
++    sprintf(command_buf, "%s %s", task->program_path, task->program_args);
++    FILE* log_fp = fopen(task->log_filename, "a+");
++    printf("execute %s\n", task->task_name);
++    fprintf(log_fp, "execute %s\n", task->task_name);
++
++    struct timespec start, end;
++    timespec_get(&start, TIME_UTC);
++    for(int i=0;i<task->sample_number;i++){
++        printf("pass %d\n", i);
++        system(command_buf);
++    }
++    timespec_get(&end, TIME_UTC);
++
++    double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
++    printf("Elapsed time: %.3f seconds\n", elapsed);
++    fprintf(log_fp, "Elapsed time: %.3f seconds\n", elapsed);
++    fclose(log_fp);
++}
++
++int main(){
++    system("mkdir /tmp/lat_fs");
++    system("touch /tmp/lat_fs/lmbench");
++    system("cp hello /tmp/hello");
++    struct task task_list[] = {
++        {
++            .task_name = "read",
++            .program_path = "./lat_syscall",
++            .program_args = "-P 1 read",
++            .sample_number = 1,
++            .log_filename = "./lmbench.log"
++        },
++        {
++            .task_name = "write",
++            .program_path = "./lat_syscall",
++            .program_args = "-P 1 write",
++            .sample_number = 1,
++            .log_filename = "./lmbench.log"
++        },
++        {
++            .task_name = "open",
++            .program_path = "./lat_syscall",
++            .program_args = "-P 1 open /tmp/lat_fs/lmbench",
++            .sample_number = 1,
++            .log_filename = "./lmbench.log"
++        },
++        {
++            .task_name = "select",
++            .program_path = "./lat_select",
++            .program_args = "-n 500 -P 1 file",
++            .sample_number = 1,
++            .log_filename = "./lmbench.log"
++        },
++        {
++            .task_name = "sig install",
++            .program_path = "./lat_sig",
++            .program_args = "-P 1 install",
++            .sample_number = 1,
++            .log_filename = "./lmbench.log"
++        },
++        {
++            .task_name = "sig hndl",
++            .program_path = "./lat_sig",
++            .program_args = "-P 1 catch",
++            .sample_number = 1,
++            .log_filename = "./lmbench.log"
++        },
++        {
++            .task_name = "fork",
++            .program_path = "./lat_proc",
++            .program_args = "-P 1 fork",
++            .sample_number = 1,
++            .log_filename = "./lmbench.log"
++        },
++        {
++            .task_name = "shell",
++            .program_path = "./lat_proc",
++            .program_args = "-P 1 shell",
++            .sample_number = 1,
++            .log_filename = "./lmbench.log"
++        },
++    };
++    for(int i=0;i<sizeof(task_list)/sizeof(struct task);i++){
++        execute_task(&task_list[i]);
++    }
++    system("rm -rf /tmp/lat_fs");
++    system("rm /tmp/hello");
++}
+\ No newline at end of file
