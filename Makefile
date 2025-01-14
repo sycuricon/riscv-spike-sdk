@@ -110,8 +110,8 @@ $(clang): $(llvm_srcdir)
 		-DCMAKE_INSTALL_PREFIX=$(toolchain_dest) \
 		-DLLVM_DEFAULT_TARGET_TRIPLE=riscv64-unknown-linux-gnu \
 		-DLLVM_TARGETS_TO_BUILD="RISCV" \
+		-DDEFAULT_SYSROOT=$(llvm_sysroot) \
 		$(llvm_srcdir)/llvm
-		# -DDEFAULT_SYSROOT=$(llvm_sysroot) \
 	free -h
 	$(CMAKE) --build $(llvm_wrkdir) --target install
 
@@ -161,16 +161,16 @@ endif
 # 		CROSS_COMPILE=riscv64-unknown-linux-gnu- \
 # 		ARCH=riscv \
 # 		all
-$(vmlinux): $(linux_srcdir) $(buildroot_initramfs_sysroot)
+$(vmlinux): $(linux_srcdir) $(buildroot_initramfs_sysroot) $(linux_wrkdir)/.config
 	mkdir -p $(linux_wrkdir)
-	cp $(confdir)/6.6.2-config $(linux_wrkdir)/.config
 	$(MAKE) -C $< O=$(linux_wrkdir) \
 		CONFIG_INITRAMFS_SOURCE="$(confdir)/initramfs.txt $(buildroot_initramfs_sysroot)" \
 		CONFIG_INITRAMFS_ROOT_UID=$(shell id -u) \
 		CONFIG_INITRAMFS_ROOT_GID=$(shell id -g) \
 		CROSS_COMPILE=riscv64-unknown-linux-gnu- \
 		ARCH=riscv \
-		CC=clang KBUILD_CFLAGS_KERNEL="$(KBUILD_CFLAGS_KERNEL-$(prot))" LLVM_IAS=1 \
+		CC=clang \
+		KBUILD_CFLAGS_KERNEL="$(KBUILD_CFLAGS_KERNEL-$(prot))" LLVM_IAS=1 \
 		all
 
 $(vmlinux_stripped): $(vmlinux)
@@ -260,11 +260,14 @@ clean:
 mrproper:
 	rm -rf -- $(wrkdir) $(toolchain_dest) $(topdir)/rootfs
 
-.PHONY: spike qemu
+.PHONY: spike spike-debug qemu qemu-debug
 
 ifeq ($(BL),opensbi)
 spike: $(fw_jump) $(spike)
 	$(spike) --isa=$(ISA)_zicntr_zihpm --kernel $(linux_image) $(fw_jump)
+
+spile-debug: $(bbl) $(spike)
+	$(spike) --isa=$(ISA)_zicntr_zihpm -H --rbb-port=9824 --kernel $(linux_image) $(fw_jump)
 
 qemu: $(qemu) $(fw_jump)
 	$(qemu) -nographic -machine virt -cpu rv64,sv57=on -m 2048M -bios $(fw_jump) -kernel $(linux_image)
@@ -275,6 +278,9 @@ qemu-debug: $(qemu) $(fw_jump)
 else ifeq ($(BL),bbl)
 spike: $(bbl) $(spike)
 	$(spike) --isa=$(ISA)_zicntr_zihpm $(bbl)
+
+spile-debug: $(bbl) $(spike)
+	$(spike) --isa=$(ISA)_zicntr_zihpm -H --rbb-port=9824 $(bbl)
 
 qemu: $(qemu) $(bbl)
 	$(qemu) -nographic -machine virt -cpu rv64,sv57=on -m 2048M -bios $(bbl)

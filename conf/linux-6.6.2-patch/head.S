@@ -330,7 +330,7 @@ clear_bss_done:
     REG_S t2, TASK_TI_TKEY_LOW(tp)
 #endif
 #ifdef CONFIG_PEC_CFI
-	call PPPGFPInit
+	# call PPPGFPInit
 #endif
 
 #ifdef CONFIG_KASAN
