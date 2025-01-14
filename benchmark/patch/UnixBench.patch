@@ -1,5 +1,5 @@
 diff --git a/UnixBench/Makefile b/UnixBench/Makefile
-index 4874d1f..267b2af 100644
+index 4874d1f..e1f3fe7 100644
 --- a/UnixBench/Makefile
 +++ b/UnixBench/Makefile
 @@ -55,7 +55,7 @@ GL_LIBS = -lGL -lXext -lX11
@@ -7,7 +7,7 @@ index 4874d1f..267b2af 100644
  # to build the binary benchmarks.  You should also set "$cCompiler" in the
  # Run script to the name of the compiler you want to test.
 -CC=gcc
-+CC = $(RISCV)/bin/riscv64-unknown-linux-gnu-gcc
++CC=$(RISCV)/bin/riscv64-unknown-linux-gnu-gcc
  
  # OPTIMISATION SETTINGS:
  # Use gcc option if defined UB_GCC_OPTIONS via "Environment variable" or "Command-line arguments".
@@ -20,3 +20,145 @@ index 4874d1f..267b2af 100644
    ifeq ($(OSNAME),Linux)
      # Not all CPU architectures support "-march" or "-march=native".
      #   - Supported    : x86, x86_64, ARM, AARCH64, riscv64, etc..
+@@ -142,7 +142,8 @@ SOURCES = arith.c big.c context1.c \
+ 	fstime.c hanoi.c \
+ 	pipe.c spawn.c \
+ 	syscall.c looper.c timeit.c time-polling.c \
+-	dhry_1.c dhry_2.c dhry.h whets.c ubgears.c
++	dhry_1.c dhry_2.c dhry.h whets.c ubgears.c \
++   execute.c
+ TESTS = sort.src cctest.c dc.dat large.txt
+ 
+ ifneq (,$(GRAPHIC_TESTS))
+@@ -157,7 +158,8 @@ BINS = $(PROGDIR)/arithoh $(PROGDIR)/register $(PROGDIR)/short \
+ 	$(PROGDIR)/hanoi $(PROGDIR)/syscall $(PROGDIR)/context1 \
+ 	$(PROGDIR)/pipe $(PROGDIR)/spawn $(PROGDIR)/execl \
+ 	$(PROGDIR)/dhry2 $(PROGDIR)/dhry2reg  $(PROGDIR)/looper \
+-	$(PROGDIR)/fstime $(PROGDIR)/whetstone-double $(GRAPHIC_BINS)
++	$(PROGDIR)/fstime $(PROGDIR)/whetstone-double $(GRAPHIC_BINS)\
++   $(PROGDIR)/execute
+ ## These compile only on some platforms...
+ # $(PROGDIR)/poll $(PROGDIR)/poll2 $(PROGDIR)/select
+ 
+@@ -293,6 +295,8 @@ $(PROGDIR)/dhry2reg: $(SRCDIR)/dhry_1.c $(SRCDIR)/dhry_2.c \
+                      $(SRCDIR)/dhry.h $(SRCDIR)/timeit.c
+ 	$(CC) -o $@ ${CFLAGS} $(SRCDIR)/dhry_1.c $(SRCDIR)/dhry_2.c
+ 
++$(PROGDIR)/execute: $(SRCDIR)/execute.c
++
+ # Run the benchmarks and create the reports
+ run:
+ 	sh ./Run
+diff --git a/UnixBench/src/execute.c b/UnixBench/src/execute.c
+new file mode 100644
+index 0000000..f2033dc
+--- /dev/null
++++ b/UnixBench/src/execute.c
+@@ -0,0 +1,106 @@
++#include<stdio.h>
++#include<stdlib.h>
++#include<time.h>
++
++typedef struct task{
++    const char* task_name;
++    const char* program_path;
++    const char* program_args;
++    const int sample_number;
++    const char* log_filename;
++}* Task;
++
++void execute_task(Task task){
++    char command_buf[100];
++    sprintf(command_buf, "%s %s", task->program_path, task->program_args);
++    FILE* log_fp = fopen(task->log_filename, "a+");
++    printf("execute %s\n", task->task_name);
++    fprintf(log_fp, "execute %s\n", task->task_name);
++
++    struct timespec start, end;
++    timespec_get(&start, TIME_UTC);
++    for(int i=0;i<task->sample_number;i++){
++        printf("pass %d\n", i);
++        system(command_buf);
++    }
++    timespec_get(&end, TIME_UTC);
++
++    double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
++    printf("Elapsed time: %.3f seconds\n", elapsed);
++    fprintf(log_fp, "Elapsed time: %.3f seconds\n", elapsed);
++    fclose(log_fp);
++}
++
++#define TASK_NUM 9
++
++int main(){
++    setenv("UB_BINDIR", ".", 1);
++    struct task task_list[TASK_NUM] = {
++        {
++            .task_name = "dhrystone",
++            .program_path = "./dhry2reg",
++            .program_args = "10",
++            .sample_number = 8,
++            .log_filename = "./unixbench.log"
++        },
++        {
++            .task_name = "whetstone",
++            .program_path = "./whetstone-double",
++            .program_args = "2>&1",
++            .sample_number = 8,
++            .log_filename = "./unixbench.log"
++        },
++        {
++            .task_name = "execl",
++            .program_path = "./execl",
++            .program_args = "30",
++            .sample_number = 3,
++            .log_filename = "./unixbench.log"
++        },
++        {
++            .task_name = "pipe",
++            .program_path = "./pipe",
++            .program_args = "10",
++            .sample_number = 8,
++            .log_filename = "./unixbench.log"
++        },
++        {
++            .task_name = "context",
++            .program_path = "./context1",
++            .program_args = "10",
++            .sample_number = 8,
++            .log_filename = "./unixbench.log"
++        },
++        {
++            .task_name = "spawn",
++            .program_path = "./spawn",
++            .program_args = "30",
++            .sample_number = 3,
++            .log_filename = "./unixbench.log"
++        },
++        {
++            .task_name = "syscall",
++            .program_path = "./syscall",
++            .program_args = "10",
++            .sample_number = 8,
++            .log_filename = "./unixbench.log"
++        },
++        {
++            .task_name = "shell1",
++            .program_path = "./looper",
++            .program_args = "60 ./multi.sh 1",
++            .sample_number = 3,
++            .log_filename = "./unixbench.log"
++        },
++        {
++            .task_name = "shell8",
++            .program_path = "./looper",
++            .program_args = "60 ./multi.sh 8",
++            .sample_number = 3,
++            .log_filename = "./unixbench.log"
++        },
++    };
++    for(int i=0;i<TASK_NUM;i++){
++        execute_task(&task_list[i]);
++    }
++}
+\ No newline at end of file

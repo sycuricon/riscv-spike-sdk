@@ -213,7 +213,7 @@ $(unixbench_wrkdir):$(unixbench_srcdir)
 	make -C $(unixbench_srcdir) clean
 	make -C $(unixbench_srcdir)
 	cp $(unixbench_srcdir)/pgms/* $(unixbench_wrkdir)
-	cp $(benchmark_scripts)/UnixBench.sh $(unixbench_wrkdir)
+	cp $(unixbench_srcdir)/testdir/sort.src $(unixbench_wrkdir)
 
 .PHONY: buildroot_initramfs_sysroot vmlinux bbl fw_jump openocd
 buildroot_initramfs_sysroot: $(buildroot_initramfs_sysroot)
