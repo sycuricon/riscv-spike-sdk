@@ -61,8 +61,13 @@ benchmark_srcdir	:= $(CURDIR)/benchmark
 benchmark_wrkdir    := $(wrkdir)/benchmark
 benchmark_scripts   := $(benchmark_srcdir)/scripts
 benchmark_patch		:= $(benchmark_srcdir)/patch
+
 unixbench_srcdir := $(benchmark_srcdir)/byte-unixbenchmark/UnixBench
 unixbench_wrkdir := $(benchmark_wrkdir)/UnixBench
+
+libtirpc_srcdir  := $(benchmark_srcdir)/libtirpc-1.3.6
+libtirpc_wrkdir  := $(wrkdir)/libtirpc
+libtirpc_lib	 := $(buildroot_initramfs_sysroot)/lib/libtirpc.so
 
 .PHONY: all
 all: spike
@@ -214,6 +219,21 @@ $(unixbench_wrkdir):$(unixbench_srcdir)
 	make -C $(unixbench_srcdir)
 	cp $(unixbench_srcdir)/pgms/* $(unixbench_wrkdir)
 	cp $(unixbench_srcdir)/testdir/sort.src $(unixbench_wrkdir)
+
+$(libtirpc_srcdir).tar.bz2:
+	$(error "please download the libtirpc from https://sourceforge.net/projects/libtirpc/")
+
+$(libtirpc_srcdir):$(libtirpc_srcdir).tar.bz2
+	cd $(benchmark_srcdir); tar -jxvf $(libtirpc_srcdir).tar.bz2
+
+$(libtirpc_lib):$(libtirpc_srcdir)
+	rm -rf $(libtirpc_wrkdir)
+	mkdir -p $(libtirpc_wrkdir)
+	cd $(libtirpc_wrkdir); $(libtirpc_srcdir)/configure --host=riscv64-unknown-linux-gnu --prefix=$(toolchain_dest)/sysroot/usr --disable-gssapi
+	make -C $(libtirpc_wrkdir)
+	make -C $(libtirpc_wrkdir) install
+	cd $(libtirpc_wrkdir); $(libtirpc_srcdir)/configure --host=riscv64-unknown-linux-gnu --prefix=$(buildroot_initramfs_sysroot) --disable-gssapi
+	make -C $(libtirpc_wrkdir) install
 
 .PHONY: buildroot_initramfs_sysroot vmlinux bbl fw_jump openocd
 buildroot_initramfs_sysroot: $(buildroot_initramfs_sysroot)
