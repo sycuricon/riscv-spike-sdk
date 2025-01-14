@@ -1,5 +1,5 @@
 diff --git a/riscv/csrs.cc b/riscv/csrs.cc
-index 7bf2d737..e8b64974 100644
+index 7bf2d737..934dc6f1 100644
 --- a/riscv/csrs.cc
 +++ b/riscv/csrs.cc
 @@ -1692,3 +1692,29 @@ bool smcntrpmf_csr_t::unlogged_write(const reg_t val) noexcept {
@@ -19,11 +19,11 @@ index 7bf2d737..e8b64974 100644
 +
 +void key_csr_t::verify_permissions(insn_t insn, bool write) const {
 +  unsigned priv = state->prv == PRV_S && !state->v ? PRV_HS : state->prv;
-+  
++
 +  if (priv < PRV_S) {
 +    throw trap_illegal_instruction(insn.bits());
 +  }
-+  
++
 +  if (priv < PRV_M && (insn.csr() == CSR_MCRMKEYH || insn.csr() == CSR_MCRMKEYL)) {
 +    throw trap_illegal_instruction(insn.bits());
 +  }
