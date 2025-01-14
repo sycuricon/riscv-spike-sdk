@@ -58,7 +58,7 @@ target_linux  := riscv64-unknown-linux-gnu
 target_newlib := riscv64-unknown-elf
 
 benchmark_srcdir	:= $(CURDIR)/benchmark
-benchmark_wrkdir    := $(wrkdir)/benchmark
+benchmark_wrkdir	:= $(wrkdir)/benchmark
 benchmark_scripts   := $(benchmark_srcdir)/scripts
 benchmark_patch		:= $(benchmark_srcdir)/patch
 
@@ -68,6 +68,9 @@ unixbench_wrkdir := $(benchmark_wrkdir)/UnixBench
 libtirpc_srcdir  := $(benchmark_srcdir)/libtirpc-1.3.6
 libtirpc_wrkdir  := $(wrkdir)/libtirpc
 libtirpc_lib	 := $(buildroot_initramfs_sysroot)/lib/libtirpc.so
+
+lmbench_srcdir 		:= $(benchmark_srcdir)/lmbench-3.0-a9
+lmbench_wrkdir 		:= $(benchmark_wrkdir)/LmBench
 
 .PHONY: all
 all: spike
@@ -235,6 +238,13 @@ $(libtirpc_lib):$(libtirpc_srcdir)
 	cd $(libtirpc_wrkdir); $(libtirpc_srcdir)/configure --host=riscv64-unknown-linux-gnu --prefix=$(buildroot_initramfs_sysroot) --disable-gssapi
 	make -C $(libtirpc_wrkdir) install
 
+$(lmbench_wrkdir): $(lmbench_srcdir) $(libtirpc_lib)
+	rm -rf $(lmbench_wrkdir) 
+	mkdir -p $(lmbench_wrkdir) 
+	make -C $(lmbench_srcdir) clean
+	make -C $(lmbench_srcdir)
+	cp $(lmbench_srcdir)/bin/riscv-linux/* $(lmbench_wrkdir)
+
 .PHONY: buildroot_initramfs_sysroot vmlinux bbl fw_jump openocd
 buildroot_initramfs_sysroot: $(buildroot_initramfs_sysroot)
 vmlinux: $(vmlinux)
@@ -243,10 +253,13 @@ fw_image: $(fw_jump)
 openocd: $(openocd)
 
 .PHONY: benchmark benchmark_patch
-benchmark: $(unixbench_wrkdir)
+benchmark: $(unixbench_wrkdir) $(lmbench_wrkdir) $(buildroot_initramfs_sysroot)
+	cp -r $(unixbench_wrkdir) $(buildroot_initramfs_sysroot)/UnixBench 
+	cp -r $(lmbench_wrkdir) $(buildroot_initramfs_sysroot)/LmBench 
 
 benchmark_patch:$(benchmark_patch)
 	cd $(unixbench_srcdir); git apply $(benchmark_patch)/UnixBench.patch
+	cd $(lmbench_srcdir); git apply $(benchmark_patch)/LmBench.patch
 
 .PHONY: clean mrproper
 clean:
