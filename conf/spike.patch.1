@@ -1,5 +1,5 @@
 diff --git a/riscv/csrs.cc b/riscv/csrs.cc
-index 7bf2d73..2227642 100644
+index 7bf2d737..22276420 100644
 --- a/riscv/csrs.cc
 +++ b/riscv/csrs.cc
 @@ -1692,3 +1692,13 @@ bool smcntrpmf_csr_t::unlogged_write(const reg_t val) noexcept {
@@ -18,7 +18,7 @@ index 7bf2d73..2227642 100644
 +}
 \ No newline at end of file
 diff --git a/riscv/csrs.h b/riscv/csrs.h
-index 887749a..652a3e5 100644
+index 887749a6..652a3e5e 100644
 --- a/riscv/csrs.h
 +++ b/riscv/csrs.h
 @@ -843,4 +843,19 @@ class smcntrpmf_csr_t : public masked_csr_t {
@@ -42,7 +42,7 @@ index 887749a..652a3e5 100644
 +
  #endif
 diff --git a/riscv/decode.h b/riscv/decode.h
-index cd1c0a1..0e05b2b 100644
+index cd1c0a12..0e05b2b0 100644
 --- a/riscv/decode.h
 +++ b/riscv/decode.h
 @@ -93,6 +93,8 @@ public:
@@ -55,7 +55,7 @@ index cd1c0a1..0e05b2b 100644
    int64_t rvc_imm() { return x(2, 5) + (xs(12, 1) << 5); }
    int64_t rvc_zimm() { return x(2, 5) + (x(12, 1) << 5); }
 diff --git a/riscv/encoding.h b/riscv/encoding.h
-index 81d829c..a08659c 100644
+index 81d829cf..a08659c7 100644
 --- a/riscv/encoding.h
 +++ b/riscv/encoding.h
 @@ -4,7 +4,7 @@
@@ -290,7 +290,7 @@ index 81d829c..a08659c 100644
  DECLARE_CAUSE("load guest page fault", CAUSE_LOAD_GUEST_PAGE_FAULT)
  DECLARE_CAUSE("virtual instruction", CAUSE_VIRTUAL_INSTRUCTION)
 diff --git a/riscv/insn_template.h b/riscv/insn_template.h
-index cead6d7..2f2112a 100644
+index cead6d7d..2f2112ad 100644
 --- a/riscv/insn_template.h
 +++ b/riscv/insn_template.h
 @@ -9,4 +9,5 @@
@@ -301,7 +301,7 @@ index cead6d7..2f2112a 100644
  #include <assert.h>
 diff --git a/riscv/insns/crdxk.h b/riscv/insns/crdxk.h
 new file mode 100644
-index 0000000..dd3bb5a
+index 00000000..dd3bb5a4
 --- /dev/null
 +++ b/riscv/insns/crdxk.h
 @@ -0,0 +1,78 @@
@@ -385,7 +385,7 @@ index 0000000..dd3bb5a
 +WRITE_RD(plain);
 diff --git a/riscv/insns/crexk.h b/riscv/insns/crexk.h
 new file mode 100644
-index 0000000..79b1c50
+index 00000000..79b1c504
 --- /dev/null
 +++ b/riscv/insns/crexk.h
 @@ -0,0 +1,74 @@
@@ -464,7 +464,7 @@ index 0000000..79b1c50
 +uint64_t cipher = qarma64_enc(text, tweak, w0, k0, round);
 +WRITE_RD(cipher);
 diff --git a/riscv/processor.cc b/riscv/processor.cc
-index 0ac6e67..2ffe6a3 100644
+index 0ac6e67c..2ffe6a32 100644
 --- a/riscv/processor.cc
 +++ b/riscv/processor.cc
 @@ -585,6 +585,23 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
@@ -492,7 +492,7 @@ index 0ac6e67..2ffe6a3 100644
  
    log_reg_write.clear();
 diff --git a/riscv/processor.h b/riscv/processor.h
-index a2e4286..44419ab 100644
+index a2e42865..44419ab8 100644
 --- a/riscv/processor.h
 +++ b/riscv/processor.h
 @@ -111,6 +111,22 @@ struct state_t
@@ -520,7 +520,7 @@ index a2e4286..44419ab 100644
    csr_t_p nonvirtual_stvec;
 diff --git a/riscv/qarma.cc b/riscv/qarma.cc
 new file mode 100644
-index 0000000..83aa52f
+index 00000000..83aa52f5
 --- /dev/null
 +++ b/riscv/qarma.cc
 @@ -0,0 +1,303 @@
@@ -830,7 +830,7 @@ index 0000000..83aa52f
 \ No newline at end of file
 diff --git a/riscv/qarma.h b/riscv/qarma.h
 new file mode 100644
-index 0000000..aa02ef6
+index 00000000..aa02ef6a
 --- /dev/null
 +++ b/riscv/qarma.h
 @@ -0,0 +1,35 @@
@@ -871,7 +871,7 @@ index 0000000..aa02ef6
 +#endif
 \ No newline at end of file
 diff --git a/riscv/riscv.mk.in b/riscv/riscv.mk.in
-index 76c2ed7..b3cfcd4 100644
+index 76c2ed7c..b3cfcd4e 100644
 --- a/riscv/riscv.mk.in
 +++ b/riscv/riscv.mk.in
 @@ -44,6 +44,7 @@ riscv_install_hdrs = \
