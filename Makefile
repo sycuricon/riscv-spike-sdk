@@ -72,6 +72,9 @@ libtirpc_lib	 := $(buildroot_initramfs_sysroot)/lib/libtirpc.so
 lmbench_srcdir 		:= $(benchmark_srcdir)/lmbench-3.0-a9
 lmbench_wrkdir 		:= $(benchmark_wrkdir)/LmBench
 
+regvault_srcdir		:= $(benchmark_srcdir)/regvault
+regvault_wrkdir		:= $(benchmark_wrkdir)/regvault
+
 .PHONY: all
 all: spike
 
@@ -239,6 +242,13 @@ $(lmbench_wrkdir): $(lmbench_srcdir) $(libtirpc_lib)
 	make -C $(lmbench_srcdir)
 	cp $(lmbench_srcdir)/bin/riscv-linux/* $(lmbench_wrkdir)
 
+$(regvault_wrkdir): $(regvault_srcdir) $(vmlinux)
+	rm -rf $(regvault_wrkdir)
+	mkdir -p $(regvault_wrkdir)
+	make -C $(regvault_srcdir) clean
+	make -C $(regvault_srcdir)
+	cp $(regvault_srcdir)/rgvlt_test.ko $(regvault_wrkdir)
+
 .PHONY: buildroot_initramfs_sysroot vmlinux bbl fw_jump openocd
 buildroot_initramfs_sysroot: $(buildroot_initramfs_sysroot)
 vmlinux: $(vmlinux)
@@ -247,9 +257,10 @@ fw_image: $(fw_jump)
 openocd: $(openocd)
 
 .PHONY: benchmark benchmark_patch
-benchmark: $(unixbench_wrkdir) $(lmbench_wrkdir) $(buildroot_initramfs_sysroot)
+benchmark: $(unixbench_wrkdir) $(lmbench_wrkdir) $(regvault_wrkdir) $(buildroot_initramfs_sysroot)
 	cp -r $(unixbench_wrkdir) $(buildroot_initramfs_sysroot)/
 	cp -r $(lmbench_wrkdir) $(buildroot_initramfs_sysroot)/
+	cp -r $(regvault_wrkdir) $(buildroot_initramfs_sysroot)/
 
 benchmark_patch:$(benchmark_patch)
 	cd $(unixbench_srcdir); git apply $(benchmark_patch)/UnixBench.patch
