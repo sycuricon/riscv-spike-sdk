@@ -248,8 +248,8 @@ openocd: $(openocd)
 
 .PHONY: benchmark benchmark_patch
 benchmark: $(unixbench_wrkdir) $(lmbench_wrkdir) $(buildroot_initramfs_sysroot)
-	cp -r $(unixbench_wrkdir) $(buildroot_initramfs_sysroot)/UnixBench 
-	cp -r $(lmbench_wrkdir) $(buildroot_initramfs_sysroot)/LmBench 
+	cp -r $(unixbench_wrkdir) $(buildroot_initramfs_sysroot)/
+	cp -r $(lmbench_wrkdir) $(buildroot_initramfs_sysroot)/
 
 benchmark_patch:$(benchmark_patch)
 	cd $(unixbench_srcdir); git apply $(benchmark_patch)/UnixBench.patch
