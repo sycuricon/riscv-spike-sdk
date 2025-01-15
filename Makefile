@@ -65,7 +65,7 @@ benchmark_patch		:= $(benchmark_srcdir)/patch
 unixbench_srcdir := $(benchmark_srcdir)/byte-unixbenchmark/UnixBench
 unixbench_wrkdir := $(benchmark_wrkdir)/UnixBench
 
-libtirpc_srcdir  := $(benchmark_srcdir)/libtirpc-1.3.6
+libtirpc_srcdir  := $(benchmark_srcdir)/libtirpc
 libtirpc_wrkdir  := $(wrkdir)/libtirpc
 libtirpc_lib	 := $(buildroot_initramfs_sysroot)/lib/libtirpc.so
 
@@ -222,12 +222,6 @@ $(unixbench_wrkdir):$(unixbench_srcdir)
 	make -C $(unixbench_srcdir)
 	cp $(unixbench_srcdir)/pgms/* $(unixbench_wrkdir)
 	cp $(unixbench_srcdir)/testdir/sort.src $(unixbench_wrkdir)
-
-$(libtirpc_srcdir).tar.bz2:
-	$(error "please download the libtirpc from https://sourceforge.net/projects/libtirpc/")
-
-$(libtirpc_srcdir):$(libtirpc_srcdir).tar.bz2
-	cd $(benchmark_srcdir); tar -jxvf $(libtirpc_srcdir).tar.bz2
 
 $(libtirpc_lib):$(libtirpc_srcdir)
 	rm -rf $(libtirpc_wrkdir)
