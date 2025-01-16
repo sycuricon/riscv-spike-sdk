@@ -1,0 +1,42 @@
+[submodule "binutils"]
+	path = binutils
+	url = https://sourceware.org/git/binutils-gdb.git
+	branch = binutils-2_40-branch
+[submodule "gcc"]
+	path = gcc
+	url = https://gcc.gnu.org/git/gcc.git
+	branch = releases/gcc-13
+[submodule "glibc"]
+	path = glibc
+	url = https://sourceware.org/git/glibc.git
+[submodule "dejagnu"]
+	path = dejagnu
+	url = https://git.savannah.gnu.org/git/dejagnu.git
+	branch = master
+[submodule "newlib"]
+	path = newlib
+	url = https://sourceware.org/git/newlib-cygwin.git
+	branch = master
+[submodule "gdb"]
+	path = gdb
+	url = https://sourceware.org/git/binutils-gdb.git
+	branch = gdb-13-branch
+[submodule "qemu"]
+	path = qemu
+	url = https://gitlab.com/qemu-project/qemu.git
+[submodule "musl"]
+	path = musl
+	url = https://git.musl-libc.org/git/musl
+	branch = master
+[submodule "spike"]
+	path = spike
+	url = https://github.com/riscv-software-src/riscv-isa-sim.git
+	branch = master
+[submodule "pk"]
+	path = pk
+	url = https://github.com/riscv-software-src/riscv-pk.git
+	branch = master
+[submodule "llvm"]
+	path = llvm
+	url = https://github.com/RegulusGuo/llvm-project.git
+	branch = regvault-rv
