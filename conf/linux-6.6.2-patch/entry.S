@@ -24,45 +24,8 @@ SYM_CODE_START(handle_exception)
 	bnez tp, _save_context
 
 _restore_kernel_tpsp:
-#ifndef CONFIG_PEC_INTERRUPT
 	csrr tp, CSR_SCRATCH
 	REG_S sp, TASK_TI_KERNEL_SP(tp)
-#else
-    csrr tp, CSR_SCRATCH
-	REG_S sp, TASK_TI_KERNEL_SP(tp)
-    REG_S sp, TASK_TI_USER_SP(tp)
-	addi sp, sp, -(PT_SIZE_ON_STACK)
-    creak x1, x1, sp, 0, 7
-    creak x3, x3, x1, 0, 7
-    creak x5, x5, x3, 0, 7
-    creak x6, x6, x5, 0, 7
-    creak x7, x7, x6, 0, 7
-    creak x8, x8, x7, 0, 7
-    creak x9, x9, x8, 0, 7
-    creak x10, x10, x9, 0, 7
-    creak x11, x11, x10, 0, 7
-    creak x12, x12, x11, 0, 7
-    creak x13, x13, x12, 0, 7
-    creak x14, x14, x13, 0, 7
-    creak x15, x15, x14, 0, 7
-    creak x16, x16, x15, 0, 7
-    creak x17, x17, x16, 0, 7
-    creak x18, x18, x17, 0, 7
-    creak x19, x19, x18, 0, 7
-    creak x20, x20, x19, 0, 7
-    creak x21, x21, x20, 0, 7
-    creak x22, x22, x21, 0, 7
-    creak x23, x23, x22, 0, 7
-    creak x24, x24, x23, 0, 7
-    creak x25, x25, x24, 0, 7
-    creak x26, x26, x25, 0, 7
-    creak x27, x27, x26, 0, 7
-    creak x28, x28, x27, 0, 7
-    creak x29, x29, x28, 0, 7
-    creak x30, x30, x29, 0, 7
-    creak x31, x31, x30, 0, 7
-    # j _real_save_context
-#endif
 
 #ifdef CONFIG_VMAP_STACK
 	addi sp, sp, -(PT_SIZE_ON_STACK)
@@ -76,10 +39,71 @@ _save_context:
 	REG_S sp, TASK_TI_USER_SP(tp)
 	REG_L sp, TASK_TI_KERNEL_SP(tp)
 	addi sp, sp, -(PT_SIZE_ON_STACK)
+#ifdef CONFIG_PEC_INTERRUPT
+	creak x1, x1, sp, 0, 7
+    creak x3, x3, x1, 0, 7
+	REG_S x1,  PT_RA(sp)
+    creak x5, x5, x3, 0, 7
+	REG_S x3,  PT_GP(sp)
+    creak x6, x6, x5, 0, 7
+	REG_S x5,  PT_T0(sp)
+    creak x7, x7, x6, 0, 7
+	REG_S x6,  PT_T1(sp)
+    creak x8, x8, x7, 0, 7
+	REG_S x7,  PT_T2(sp)
+    creak x9, x9, x8, 0, 7
+	REG_S x8,  PT_S0(sp)
+    creak x10, x10, x9, 0, 7
+	REG_S x9,  PT_S1(sp)
+    creak x11, x11, x10, 0, 7
+	REG_S x10,  PT_A0(sp)
+    creak x12, x12, x11, 0, 7
+	REG_S x11,  PT_A1(sp)
+    creak x13, x13, x12, 0, 7
+	REG_S x12,  PT_A2(sp)
+    creak x14, x14, x13, 0, 7
+	REG_S x13,  PT_A3(sp)
+    creak x15, x15, x14, 0, 7
+	REG_S x14,  PT_A4(sp)
+    creak x16, x16, x15, 0, 7
+	REG_S x15,  PT_A5(sp)
+    creak x17, x17, x16, 0, 7
+	REG_S x16,  PT_A6(sp)
+    creak x18, x18, x17, 0, 7
+	REG_S x17,  PT_A7(sp)
+    creak x19, x19, x18, 0, 7
+	REG_S x18,  PT_S2(sp)
+    creak x20, x20, x19, 0, 7
+	REG_S x19,  PT_S3(sp)
+    creak x21, x21, x20, 0, 7
+	REG_S x20,  PT_S4(sp)
+    creak x22, x22, x21, 0, 7
+    REG_S x21,  PT_S5(sp)
+	creak x23, x23, x22, 0, 7
+    REG_S x22,  PT_S6(sp)
+	creak x24, x24, x23, 0, 7
+    REG_S x23,  PT_S7(sp)
+	creak x25, x25, x24, 0, 7
+    REG_S x24,  PT_S8(sp)
+	creak x26, x26, x25, 0, 7
+    REG_S x25,  PT_S9(sp)
+	creak x27, x27, x26, 0, 7
+    REG_S x26,  PT_S10(sp)
+	creak x28, x28, x27, 0, 7
+    REG_S x27,  PT_S11(sp)
+	creak x29, x29, x28, 0, 7
+    REG_S x28,  PT_T3(sp)
+	creak x30, x30, x29, 0, 7
+    REG_S x29,  PT_T4(sp)
+	creak x31, x31, x30, 0, 7
+	REG_S x30,  PT_T5(sp)
+	REG_S x31,  PT_T6(sp)
+#else
 	REG_S x1,  PT_RA(sp)
 	REG_S x3,  PT_GP(sp)
 	REG_S x5,  PT_T0(sp)
 	save_from_x6_to_x31
+#endif
 
 	/*
 	 * Disable user-mode memory access as it should only be set in the
@@ -190,42 +214,72 @@ SYM_CODE_START_NOALIGN(ret_from_exception)
 	csrw CSR_STATUS, a0
 	csrw CSR_EPC, a2
 
+#ifdef CONFIG_PEC_INTERRUPT
+	REG_L x31, PT_T6(sp)
+	REG_L x30, PT_T5(sp)
+	REG_L x29, PT_T4(sp)
+	crdak x31, x31, x30, 0, 7
+	REG_L x28, PT_T3(sp)
+    crdak x30, x30, x29, 0, 7
+	REG_L x27, PT_S11(sp)
+    crdak x29, x29, x28, 0, 7
+	REG_L x26, PT_S10(sp)
+    crdak x28, x28, x27, 0, 7
+	REG_L x25, PT_S9(sp)
+    crdak x27, x27, x26, 0, 7
+	REG_L x24, PT_S8(sp)
+    crdak x26, x26, x25, 0, 7
+	REG_L x23, PT_S7(sp)
+    crdak x25, x25, x24, 0, 7
+	REG_L x22, PT_S6(sp)
+    crdak x24, x24, x23, 0, 7
+	REG_L x21, PT_S5(sp)
+    crdak x23, x23, x22, 0, 7
+	REG_L x20, PT_S4(sp)
+    crdak x22, x22, x21, 0, 7
+	REG_L x19, PT_S3(sp)
+    crdak x21, x21, x20, 0, 7
+	REG_L x18, PT_S2(sp)
+    crdak x20, x20, x19, 0, 7
+	REG_L x17, PT_A7(sp)
+    crdak x19, x19, x18, 0, 7
+	REG_L x16, PT_A6(sp)
+    crdak x18, x18, x17, 0, 7
+	REG_L x15, PT_A5(sp)
+    crdak x17, x17, x16, 0, 7
+	REG_L x14, PT_A4(sp)
+    crdak x16, x16, x15, 0, 7
+	REG_L x13, PT_A3(sp)
+    crdak x15, x15, x14, 0, 7
+	REG_L x12, PT_A2(sp)
+    crdak x14, x14, x13, 0, 7
+	REG_L x11, PT_A1(sp)
+    crdak x13, x13, x12, 0, 7
+	REG_L x10, PT_A0(sp)
+    crdak x12, x12, x11, 0, 7
+	REG_L x9,  PT_S1(sp)
+    crdak x11, x11, x10, 0, 7
+	REG_L x8,  PT_S0(sp)
+    crdak x10, x10, x9, 0, 7
+	REG_L x7,  PT_T2(sp)
+    crdak x9, x9, x8, 0, 7
+	REG_L x6,  PT_T1(sp)
+    crdak x8, x8, x7, 0, 7
+	REG_L x5,  PT_T0(sp)
+    crdak x7, x7, x6, 0, 7
+	REG_L x4,  PT_TP(sp)
+    crdak x6, x6, x5, 0, 7
+	REG_L x3,  PT_GP(sp)
+    crdak x5, x5, x3, 0, 7
+	REG_L x1,  PT_RA(sp)
+    crdak x3, x3, x1, 0, 7
+    crdak x1, x1, sp, 0, 7
+#else
 	REG_L x1,  PT_RA(sp)
 	REG_L x3,  PT_GP(sp)
 	REG_L x4,  PT_TP(sp)
 	REG_L x5,  PT_T0(sp)
 	restore_from_x6_to_x31
-
-#ifdef CONFIG_PEC_INTERRUPT
-	crdak x31, x31, x30, 0, 7
-    crdak x30, x30, x29, 0, 7
-    crdak x29, x29, x28, 0, 7
-    crdak x28, x28, x27, 0, 7
-    crdak x27, x27, x26, 0, 7
-    crdak x26, x26, x25, 0, 7
-    crdak x25, x25, x24, 0, 7
-    crdak x24, x24, x23, 0, 7
-    crdak x23, x23, x22, 0, 7
-    crdak x22, x22, x21, 0, 7
-    crdak x21, x21, x20, 0, 7
-    crdak x20, x20, x19, 0, 7
-    crdak x19, x19, x18, 0, 7
-    crdak x18, x18, x17, 0, 7
-    crdak x17, x17, x16, 0, 7
-    crdak x16, x16, x15, 0, 7
-    crdak x15, x15, x14, 0, 7
-    crdak x14, x14, x13, 0, 7
-    crdak x13, x13, x12, 0, 7
-    crdak x12, x12, x11, 0, 7
-    crdak x11, x11, x10, 0, 7
-    crdak x10, x10, x9, 0, 7
-    crdak x9, x9, x8, 0, 7
-    crdak x8, x8, x7, 0, 7
-    crdak x7, x7, x6, 0, 7
-    crdak x6, x6, x5, 0, 7
-    crdak x5, x5, x3, 0, 7
-    crdak x3, x3, x1, 0, 7
-    crdak x1, x1, sp, 0, 7
 #endif
 
 	REG_L x2,  PT_SP(sp)
