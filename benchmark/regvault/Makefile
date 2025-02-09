@@ -3,7 +3,7 @@
 ARCH := riscv # set if cross-compile  
 CROSS_COMPILE := $(RISCV)/bin/riscv64-unknown-linux-gnu- # set if cross-compile
 
-KERNEL_DIR := $(CURDIR)/../build/linux/
+KERNEL_DIR := $(CURDIR)/../../build/linux/
 		
 obj-m := rgvlt_test.o
 
