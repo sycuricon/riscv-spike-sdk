@@ -197,6 +197,14 @@ $(vmlinux_stripped): $(vmlinux)
 $(linux_image): $(vmlinux)
 linux: $(linux_image)
 
+linux-perf:$(linux_srcdir)
+	mkdir -p $(linux_wrkdir)/perf
+	$(MAKE) -C $</tools/perf O=$(linux_wrkdir)/perf \
+		CROSS_COMPILE=riscv64-unknown-linux-gnu- \
+		ARCH=riscv \
+		all NO_LIBELF=1 NO_LIBTRACEEVENT=1 EXTRA_CFLAGS="-Wno-error=alloc-size -Wno-error=calloc-transposed-args"
+	cp $(linux_wrkdir)/perf/perf $(buildroot_initramfs_sysroot)/bin
+
 .PHONY: linux-menuconfig
 linux-menuconfig: $(linux_wrkdir)/.config
 	$(MAKE) -C $(linux_srcdir) O=$(dir $<) ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- menuconfig
