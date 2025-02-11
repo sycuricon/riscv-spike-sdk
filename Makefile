@@ -2,7 +2,7 @@
 # a toolchain install tree that was built via other means.
 export RISCV ?= $(CURDIR)/toolchain
 PATH := $(RISCV)/bin:$(PATH)
-ISA ?= rv64imafdc_zifencei_zicsr
+ISA ?= rv64imafdc_zifencei_zicsr_sscofpmf
 ABI ?= lp64d
 BL ?= bbl
 BOARD ?= spike
