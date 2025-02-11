@@ -51,7 +51,10 @@ opensbi_wrkdir := $(wrkdir)/opensbi
 opensbi_platform := generic
 opensbi_defconfig := $(confdir)/opensbi_defconfig
 opensbi_wrkconfig := $(opensbi_wrkdir)/platform/$(opensbi_platform)/Kconfig/.config
-fw_jump := $(opensbi_wrkdir)/platform/generic/firmware/fw_jump.elf
+fw_firmware := $(opensbi_wrkdir)/platform/generic/firmware
+fw_jump := $(fw_firmware)/fw_jump.elf
+fw_payload := $(fw_firmware)/fw_payload.elf
+fw_payload_bin := $(fw_firmware)/fw_payload.bin
 
 spike_srcdir := $(srcdir)/riscv-isa-sim
 spike_wrkdir := $(wrkdir)/riscv-isa-sim
@@ -366,6 +369,9 @@ qemu-debug: $(qemu) $(bbl)
 endif
 
 SD_CARD ?= /dev/sdb
-.PHONY: make_sd
-make_sd: $(bbl)
+.PHONY: bbl_sd opensbi_sd
+bbl_sd: $(bbl)
 	sudo dd if=$(bbl).bin of=$(SD_CARD)1 bs=4096
+
+opensbi_sd: $(fw_payload)
+	sudo dd if=$(fw_payload_bin) of=$(SD_CARD)1 bs=4096
