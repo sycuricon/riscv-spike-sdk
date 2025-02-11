@@ -48,6 +48,9 @@ pk  := $(pk_wrkdir)/pk
 
 opensbi_srcdir := $(srcdir)/opensbi
 opensbi_wrkdir := $(wrkdir)/opensbi
+opensbi_platform := generic
+opensbi_defconfig := $(confdir)/opensbi_defconfig
+opensbi_wrkconfig := $(opensbi_wrkdir)/platform/$(opensbi_platform)/Kconfig/.config
 fw_jump := $(opensbi_wrkdir)/platform/generic/firmware/fw_jump.elf
 
 spike_srcdir := $(srcdir)/riscv-isa-sim
@@ -233,9 +236,16 @@ $(pk): $(pk_srcdir) $(RISCV)/bin/$(target_newlib)-gcc
 	$(MAKE) -C $(pk_wrkdir) install
 
 $(fw_jump): $(opensbi_srcdir) $(linux_image) $(RISCV)/bin/$(target_linux)-gcc
+	mkdir -p $(opensbi_wrkdir)
+	$(MAKE) -C $(opensbi_srcdir) FW_TEXT_START=0x80000000 FW_PAYLOAD_PATH=$(linux_image) PLATFORM=$(opensbi_platform)\
+		O=$(opensbi_wrkdir) CROSS_COMPILE=riscv64-unknown-linux-gnu-
+
+.PHONY: opensbi-menuconfig
+opensbi-menuconfig:
 	rm -rf $(opensbi_wrkdir)
 	mkdir -p $(opensbi_wrkdir)
-	$(MAKE) -C $(opensbi_srcdir) FW_TEXT_START=0x80000000 FW_PAYLOAD_PATH=$(linux_image) PLATFORM=generic O=$(opensbi_wrkdir) CROSS_COMPILE=riscv64-unknown-linux-gnu-
+	$(MAKE) -C $(opensbi_srcdir) PLATFORM=$(opensbi_platform) O=$(opensbi_wrkdir) CROSS_COMPILE=riscv64-unknown-linux-gnu- menuconfig
+	$(MAKE) -C $(opensbi_srcdir) PLATFORM=$(opensbi_platform) O=$(opensbi_wrkdir) CROSS_COMPILE=riscv64-unknown-linux-gnu- savedefconfig
 
 $(spike): $(spike_srcdir) 
 	rm -rf $(spike_wrkdir)
