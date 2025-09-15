@@ -22,7 +22,7 @@ index 9ce3b94..e22f4e6 100755
 +CC=${RISCV}/bin/riscv64-unknown-linux-gnu-gcc
  echo $CC
 diff --git a/scripts/config-run b/scripts/config-run
-index f620c15..66c3b4a 100755
+index f620c15..39e80ff 100755
 --- a/scripts/config-run
 +++ b/scripts/config-run
 @@ -197,37 +197,37 @@ The bigger the range, the more accurate the results, but larger sizes
@@ -163,7 +163,7 @@ index 597d068..54f4550 100644
  typedef int64 off64_t;
 diff --git a/src/execute.c b/src/execute.c
 new file mode 100644
-index 0000000..b975ad8
+index 0000000..73a70a5
 --- /dev/null
 +++ b/src/execute.c
 @@ -0,0 +1,101 @@
@@ -209,56 +209,56 @@ index 0000000..b975ad8
 +            .task_name = "read",
 +            .program_path = "./lat_syscall",
 +            .program_args = "-P 1 read",
-+            .sample_number = 1,
++            .sample_number = 5,
 +            .log_filename = "./lmbench.log"
 +        },
 +        {
 +            .task_name = "write",
 +            .program_path = "./lat_syscall",
 +            .program_args = "-P 1 write",
-+            .sample_number = 1,
++            .sample_number = 5,
 +            .log_filename = "./lmbench.log"
 +        },
 +        {
 +            .task_name = "open",
 +            .program_path = "./lat_syscall",
 +            .program_args = "-P 1 open /tmp/lat_fs/lmbench",
-+            .sample_number = 1,
++            .sample_number = 5,
 +            .log_filename = "./lmbench.log"
 +        },
 +        {
 +            .task_name = "select",
 +            .program_path = "./lat_select",
 +            .program_args = "-n 500 -P 1 file",
-+            .sample_number = 1,
++            .sample_number = 5,
 +            .log_filename = "./lmbench.log"
 +        },
 +        {
 +            .task_name = "sig install",
 +            .program_path = "./lat_sig",
 +            .program_args = "-P 1 install",
-+            .sample_number = 1,
++            .sample_number = 5,
 +            .log_filename = "./lmbench.log"
 +        },
 +        {
 +            .task_name = "sig hndl",
 +            .program_path = "./lat_sig",
 +            .program_args = "-P 1 catch",
-+            .sample_number = 1,
++            .sample_number = 5,
 +            .log_filename = "./lmbench.log"
 +        },
 +        {
 +            .task_name = "fork",
 +            .program_path = "./lat_proc",
 +            .program_args = "-P 1 fork",
-+            .sample_number = 1,
++            .sample_number = 5,
 +            .log_filename = "./lmbench.log"
 +        },
 +        {
 +            .task_name = "shell",
 +            .program_path = "./lat_proc",
 +            .program_args = "-P 1 shell",
-+            .sample_number = 1,
++            .sample_number = 5,
 +            .log_filename = "./lmbench.log"
 +        },
 +    };
@@ -269,3 +269,45 @@ index 0000000..b975ad8
 +    system("rm /tmp/hello");
 +}
 \ No newline at end of file
+diff --git a/src/lat_sig.c b/src/lat_sig.c
+index b955992..f63048a 100644
+--- a/src/lat_sig.c
++++ b/src/lat_sig.c
+@@ -117,6 +117,18 @@ do_prot(iter_t iterations, void* cookie)
+ /*
+  * Cost of catching the signal less the cost of sending it
+  */
++void
++bench_send(int parallel, int warmup, int repetitions)
++{
++	uint64 send_usecs, send_n;
++
++	/* measure cost of sending signal */
++	benchmp(NULL, do_send, NULL, 0, parallel,
++		warmup, repetitions, NULL);
++	
++	settime(gettime());
++}
++
+ void
+ bench_catch(int parallel, int warmup, int repetitions)
+ {
+@@ -134,7 +146,8 @@ bench_catch(int parallel, int warmup, int repetitions)
+ 
+ 	/* subtract cost of sending signal */
+ 	if (gettime() > (send_usecs * get_n()) / send_n) {
+-		settime(gettime() - (send_usecs * get_n()) / send_n);
++		// settime(gettime() - (send_usecs * get_n()) / send_n);
++		settime(gettime());
+ 	} else {
+ 		settime(0);
+ 	}
+@@ -201,6 +214,8 @@ main(int ac, char **av)
+ 			warmup, repetitions, NULL);
+ 		micro("Signal handler installation", get_n());
+ 	} else if (!strcmp("catch", av[optind])) {
++		bench_send(parallel, warmup, repetitions);
++		micro("Signal handler overhead send", get_n());
+ 		bench_catch(parallel, warmup, repetitions);
+ 		micro("Signal handler overhead", get_n());
+ 	} else if (!strcmp("prot", av[optind]) && optind == ac - 2) {
