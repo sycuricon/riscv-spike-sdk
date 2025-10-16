@@ -1,10 +1,21 @@
 # IDE
-.vscode/
+.vscode/**/
+!.vscode/tasks.json
+!.vscode/launch.json
+
 .idea/
+
 
 # toolchian
 build/
 toolchain/
 rootfs/
-log
 
+
+# clangd
+compile_commands.json
+.cache/
+
+
+# debug
+log

@@ -1,0 +1,27 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Remote GDB Debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/linux/vmlinux",
+            "miDebuggerPath": "${workspaceFolder}/toolchain/bin/riscv64-unknown-elf-gdb",
+            "miDebuggerServerAddress": "localhost:1234",
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "launchCompleteCommand": "None",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty printing",
+                    "text": "-enable-pretty-printing"
+                },
+                {
+                    "description": "Set architecture",
+                    "text": "set architecture riscv:rv64"
+                }
+            ],
+            "preLaunchTask": "Start QEMU"
+        }
+    ]
+}
