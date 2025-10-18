@@ -58,7 +58,7 @@ target_linux  := riscv64-unknown-linux-gnu
 target_newlib := riscv64-unknown-elf
 
 .PHONY: all
-all: spike
+all: $(vmlinux)
 
 newlib: $(RISCV)/bin/$(target_newlib)-gcc
 
@@ -242,3 +242,4 @@ SD_CARD ?= /dev/sdb
 .PHONY: make_sd
 make_sd: $(bbl)
 	sudo dd if=$(bbl).bin of=$(SD_CARD)1 bs=4096
+
