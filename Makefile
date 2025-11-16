@@ -46,7 +46,7 @@ spike_srcdir := $(srcdir)/riscv-isa-sim
 spike_wrkdir := $(wrkdir)/riscv-isa-sim
 spike := $(toolchain_dest)/bin/spike
 
-qemu_srcdir := $(srcdir)/riscv-gnu-toolchain/qemu
+qemu_srcdir := $(srcdir)/qemu
 qemu_wrkdir := $(wrkdir)/qemu
 qemu :=  $(toolchain_dest)/bin/qemu-system-riscv64
 
@@ -176,6 +176,7 @@ $(spike): $(spike_srcdir)
 	$(MAKE) -C $(spike_wrkdir) install
 	touch -c $@
 
+.PHONY: qemu
 $(qemu): $(qemu_srcdir)
 	rm -rf $(qemu_wrkdir)
 	mkdir -p $(qemu_wrkdir)
@@ -187,6 +188,7 @@ $(qemu): $(qemu_srcdir)
 	$(MAKE) -C $(qemu_wrkdir)
 	$(MAKE) -C $(qemu_wrkdir) install
 	touch -c $@
+qemu: $(qemu)
 
 $(openocd): $(openocd_srcdir)
 	rm -rf $(openocd_wrkdir)
@@ -215,13 +217,13 @@ clean:
 mrproper:
 	rm -rf -- $(wrkdir) $(toolchain_dest) $(topdir)/rootfs
 
-.PHONY: spike qemu
+.PHONY: spike qemu-run
 
 ifeq ($(BL),opensbi)
 spike: $(fw_jump) $(spike)
 	$(spike) --isa=$(ISA)_zicntr_zihpm --kernel $(linux_image) $(fw_jump)
 
-qemu: $(qemu) $(fw_jump)
+qemu-run: $(qemu) $(fw_jump)
 	$(qemu) -nographic -machine virt -cpu rv64,sv57=on -m 2048M -bios $(fw_jump) -kernel $(linux_image)
 
 qemu-debug: $(qemu) $(fw_jump)
@@ -231,7 +233,7 @@ else ifeq ($(BL),bbl)
 spike: $(bbl) $(spike)
 	$(spike) --isa=$(ISA)_zicntr_zihpm $(bbl)
 
-qemu: $(qemu) $(bbl)
+qemu-run: $(qemu) $(bbl)
 	$(qemu) -nographic -machine virt -cpu rv64,sv57=on -m 2048M -bios $(bbl)
 
 qemu-debug: $(qemu) $(bbl)

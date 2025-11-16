@@ -16,3 +16,7 @@
 [submodule "repo/riscv-openocd"]
 	path = repo/riscv-openocd
 	url = https://github.com/riscv-collab/riscv-openocd.git
+[submodule "repo/qemu"]
+	path = repo/qemu
+	url = https://github.com/qemu/qemu.git
+	branch = stable-10.1
