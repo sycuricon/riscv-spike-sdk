@@ -6,6 +6,7 @@ ISA ?= rv64imafdc_zifencei_zicsr
 ABI ?= lp64d
 BL ?= bbl
 BOARD ?= spike
+CMAKE := cmake
 
 topdir := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 topdir := $(topdir:/=)
@@ -13,9 +14,14 @@ srcdir := $(topdir)/repo
 confdir := $(topdir)/conf
 wrkdir := $(CURDIR)/build
 
-toolchain_srcdir := $(srcdir)/riscv-gnu-toolchain
-toolchain_wrkdir := $(wrkdir)/riscv-gnu-toolchain
 toolchain_dest := $(CURDIR)/toolchain
+
+llvm_srcdir	 :=	$(srcdir)/llvm-project
+llvm_wrkdir	 :=	$(wrkdir)/llvm-project
+llvm_sysroot :=	$(toolchain_dest)/sysroot
+LLVM_VERSION :=  Release
+clang        := $(toolchain_dest)/bin/clang
+opt          := $(toolchain_dest)/bin/opt
 
 buildroot_srcdir := $(srcdir)/buildroot
 buildroot_initramfs_wrkdir := $(topdir)/rootfs/buildroot_initramfs
@@ -54,36 +60,25 @@ openocd_srcdir := $(srcdir)/riscv-openocd
 openocd_wrkdir := $(wrkdir)/riscv-openocd
 openocd := $(toolchain_dest)/bin/openocd
 
-target_linux  := riscv64-unknown-linux-gnu
-target_newlib := riscv64-unknown-elf
-
 .PHONY: all
 all: $(vmlinux)
 
-newlib: $(RISCV)/bin/$(target_newlib)-gcc
+.PHONY: llvm
+$(clang): $(llvm_srcdir)
+	mkdir -p $(llvm_wrkdir) $(toolchain_dest)
+	cd $(llvm_wrkdir); $(CMAKE) -G Ninja -DLLVM_ENABLE_PROJECTS="clang" \
+		-DCMAKE_BUILD_TYPE:String=$(LLVM_VERSION)  -DLLVM_ENABLE_ASSERTIONS=True \
+		-DLLVM_USE_SPLIT_DWARF=True \
+		-DLLVM_OPTIMIZED_TABLEGEN=True \
+		-DCMAKE_INSTALL_PREFIX=$(toolchain_dest) \
+		-DLLVM_DEFAULT_TARGET_TRIPLE=riscv64-unknown-linux-gnu \
+		-DLLVM_TARGETS_TO_BUILD="RISCV" \
+		-DDEFAULT_SYSROOT=$(llvm_sysroot) \
+		$(llvm_srcdir)/llvm
+	free -h
+	$(CMAKE) --build $(llvm_wrkdir) --target install
 
-
-ifneq ($(RISCV),$(toolchain_dest))
-$(RISCV)/bin/$(target_linux)-gcc:
-	$(error The RISCV environment variable was set, but is not pointing at a toolchain install tree)
-endif
-
-$(toolchain_dest)/bin/$(target_linux)-gcc:
-	mkdir -p $(toolchain_wrkdir)
-	$(MAKE) -C $(linux_srcdir) O=$(toolchain_wrkdir) ARCH=riscv INSTALL_HDR_PATH=$(abspath $(toolchain_srcdir)/linux-headers) headers_install
-	cd $(toolchain_wrkdir); $(toolchain_srcdir)/configure \
-		--prefix=$(toolchain_dest) \
-		--with-arch=$(ISA) \
-		--with-abi=$(ABI) 
-	$(MAKE) -C $(toolchain_wrkdir) linux
-	# sed 's/^#define LINUX_VERSION_CODE.*/#define LINUX_VERSION_CODE 329226/' -i $(toolchain_dest)/sysroot/usr/include/linux/version.h
-
-$(toolchain_dest)/bin/$(target_newlib)-gcc:
-	mkdir -p $(toolchain_wrkdir)
-	cd $(toolchain_wrkdir); $(toolchain_srcdir)/configure \
-		--prefix=$(toolchain_dest) \
-		--enable-multilib
-	$(MAKE) -C $(toolchain_wrkdir) 
+llvm: $(clang)
 
 $(buildroot_initramfs_wrkdir)/.config: $(buildroot_srcdir)
 	rm -rf $(dir $@)

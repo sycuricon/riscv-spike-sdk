@@ -19,3 +19,6 @@
 [submodule "repo/qemu"]
 	path = repo/qemu
 	url = https://github.com/qemu/qemu.git
+[submodule "repo/llvm-project"]
+	path = repo/llvm-project
+	url = https://github.com/llvm/llvm-project.git
