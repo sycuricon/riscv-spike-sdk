@@ -1,6 +1,3 @@
-[submodule "riscv-gnu-toolchain"]
-	path = repo/riscv-gnu-toolchain
-	url = https://github.com/riscv/riscv-gnu-toolchain.git
 [submodule "buildroot"]
 	path = repo/buildroot
 	url = https://github.com/buildroot/buildroot.git
