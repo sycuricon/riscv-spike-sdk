@@ -4,7 +4,7 @@ RISCV ?= $(CURDIR)/toolchain
 PATH := $(RISCV)/bin:$(PATH)
 ISA ?= rv64imafdc_zifencei_zicsr
 ABI ?= lp64d
-BL ?= bbl
+BL ?= opensbi
 BOARD ?= spike
 CMAKE := cmake
 
@@ -165,10 +165,12 @@ $(pk): $(pk_srcdir) $(RISCV)/bin/$(target_newlib)-gcc
 	CFLAGS="-mabi=$(ABI) -march=$(ISA)" $(MAKE) -C $(pk_wrkdir)
 	$(MAKE) -C $(pk_wrkdir) install
 
-$(fw_jump): $(opensbi_srcdir) $(linux_image) $(RISCV)/bin/$(target_linux)-gcc
+$(fw_jump): $(opensbi_srcdir) $(linux_image) $(RISCV)/bin/clang
 	rm -rf $(opensbi_wrkdir)
 	mkdir -p $(opensbi_wrkdir)
-	$(MAKE) -C $(opensbi_srcdir) FW_TEXT_START=0x80000000 FW_PAYLOAD_PATH=$(linux_image) PLATFORM=generic O=$(opensbi_wrkdir) CROSS_COMPILE=riscv64-linux-gnu-
+	$(MAKE) -C $(opensbi_srcdir) FW_TEXT_START=0x80000000 \
+		FW_PAYLOAD_PATH=$(linux_image) PLATFORM=generic O=$(opensbi_wrkdir) CROSS_COMPILE=riscv64-linux-gnu- \
+		LLVM=$(toolchain_dest)/bin/
 
 $(spike): $(spike_srcdir) 
 	rm -rf $(spike_wrkdir)
