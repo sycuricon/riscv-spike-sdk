@@ -22,3 +22,6 @@
 [submodule "repo/llvm-project"]
 	path = repo/llvm-project
 	url = https://github.com/llvm/llvm-project.git
+[submodule "repo/gdb"]
+	path = repo/gdb
+	url = https://sourceware.org/git/binutils-gdb.git
