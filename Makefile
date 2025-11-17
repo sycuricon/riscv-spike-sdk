@@ -124,17 +124,20 @@ $(vmlinux): $(linux_srcdir) $(linux_wrkdir)/.config $(buildroot_initramfs_sysroo
 		HOSTCXX=g++ \
 		CC=$(toolchain_dest)/bin/clang \
 		AS=$(toolchain_dest)/bin/clang \
+		CXX=$(toolchain_dest)/bin/clang++ \
 		LD=$(toolchain_dest)/bin/ld.lld \
 		AR=$(toolchain_dest)/bin/llvm-ar \
 		NM=$(toolchain_dest)/bin/llvm-nm \
 		OBJCOPY=$(toolchain_dest)/bin/llvm-objcopy \
 		OBJDUMP=$(toolchain_dest)/bin/llvm-objdump \
+		READELF=$(toolchain_dest)/bin/readelf \
 		STRIP=$(toolchain_dest)/bin/llvm-strip \
+		RANLIB=$(toolchain_dest)/bin/llvm-ranlib \
 		LLVM=1 LLVM_IAS=1 \
 		all
 
 $(vmlinux_stripped): $(vmlinux)
-	$(target_linux)-strip -o $@ $<
+	$(toolchain_dest)/bin/llvm-strip -o $@ $<
 
 $(linux_image): $(vmlinux)
 
@@ -172,6 +175,7 @@ $(fw_jump): $(opensbi_srcdir) $(linux_image) $(RISCV)/bin/clang
 		FW_PAYLOAD_PATH=$(linux_image) PLATFORM=generic O=$(opensbi_wrkdir) CROSS_COMPILE=riscv64-linux-gnu- \
 		LLVM=$(toolchain_dest)/bin/
 
+.PHONY: spike
 $(spike): $(spike_srcdir) 
 	rm -rf $(spike_wrkdir)
 	mkdir -p $(spike_wrkdir)
@@ -181,6 +185,7 @@ $(spike): $(spike_srcdir)
 	$(MAKE) -C $(spike_wrkdir)
 	$(MAKE) -C $(spike_wrkdir) install
 	touch -c $@
+spike: $(spike)
 
 .PHONY: qemu
 $(qemu): $(qemu_srcdir)
@@ -226,7 +231,7 @@ mrproper:
 .PHONY: spike qemu-run
 
 ifeq ($(BL),opensbi)
-spike: $(fw_jump) $(spike)
+spike-run: $(fw_jump) $(spike)
 	$(spike) --isa=$(ISA)_zicntr_zihpm --kernel $(linux_image) $(fw_jump)
 
 qemu-run: $(qemu) $(fw_jump)
@@ -236,7 +241,7 @@ qemu-debug: $(qemu) $(fw_jump)
 	$(qemu) -nographic -machine virt -cpu rv64,sv57=on -m 2048M -bios $(fw_jump) -kernel $(linux_image) -s -S
 
 else ifeq ($(BL),bbl)
-spike: $(bbl) $(spike)
+spike-run: $(bbl) $(spike)
 	$(spike) --isa=$(ISA)_zicntr_zihpm $(bbl)
 
 qemu-run: $(qemu) $(bbl)
