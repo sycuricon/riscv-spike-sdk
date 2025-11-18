@@ -28,3 +28,6 @@
 [submodule "repo/freebsd"]
 	path = repo/freebsd
 	url = https://github.com/freebsd/freebsd-src.git
+[submodule "benchmark/lmbench"]
+	path = benchmark/lmbench
+	url = https://github.com/SigRISCV/lmbench.git

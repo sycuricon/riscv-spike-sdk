@@ -14,6 +14,7 @@ srcdir := $(topdir)/repo
 confdir := $(topdir)/conf
 wrkdir := $(CURDIR)/build
 scriptdir := $(topdir)/scripts
+benchdir := $(topdir)/benchmark
 
 toolchain_dest := $(CURDIR)/toolchain
 
@@ -26,6 +27,12 @@ freebsd_srcdir := $(srcdir)/freebsd
 freebsd_wrkdir := $(wrkdir)/freebsd
 freebsd_wrkdir_legacy := $(freebsd_wrkdir)/$(freebsd_srcdir)/riscv.riscv64/tmp/legacy
 freebsd_rootfs := $(topdir)/rootfs/freebsd_sysroot
+freebsd_rootfs_img := $(freebsd_rootfs).img
+freebsd_kernel := $(freebsd_rootfs)/boot/kernel/kernel
+freebsd_bench := $(freebsd_rootfs)/opt
+
+lmbench_srcdir := $(benchdir)/lmbench
+lmbench_wrkdir := $(wrkdir)/lmbench
 
 buildroot_srcdir := $(srcdir)/buildroot
 buildroot_initramfs_wrkdir := $(topdir)/rootfs/buildroot_initramfs
@@ -186,6 +193,26 @@ $(freebsd_rootfs).img : $(freebsd_rootfs)
 	rm -f $(freebsd_rootfs).root.img
 	$(toolchain_dest)/bin/qemu-img info $(freebsd_rootfs).img
 disk-image: $(freebsd_rootfs).img
+
+.PHONY: lmbench
+lmbench: $(lmbench_srcdir)
+	make -C $(lmbench_srcdir) clean
+	make -C $(lmbench_srcdir) build \
+		CC=$(toolchain_dest)/bin/clang \
+		AR=$(toolchain_dest)/bin/llvm-ar \
+		OS=riscv-FreeBSD \
+		CFLAGS="-target riscv64-unknown-freebsd16 \
+			--sysroot=$(freebsd_rootfs) -B$(toolchain_dest)/bin \
+			-march=$(ISA) -mabi=$(ABI) -mno-relax -O3 \
+			-Wno-error=unused-command-line-argument -Werror=implicit-function-declaration \
+			-Werror=format -Werror=incompatible-pointer-types -Werror=cheri-prototypes -Werror=pass-failed \
+			-Werror=undefined-internal" \
+		LDFLAGS="-target riscv64-unknown-freebsd16 \
+			--sysroot=$(freebsd_rootfs) -B$(toolchain_dest)/bin \
+			-march=$(ISA) -mabi=$(ABI) -mno-relax -fuse-ld=lld \
+			--ld-path=$(toolchain_dest)/bin/ld.lld"
+	mkdir -p $(freebsd_bench)/lmbench
+	cp -r $(lmbench_srcdir)/bin/riscv-FreeBSD/* $(freebsd_bench)/lmbench/
 
 $(buildroot_initramfs_wrkdir)/.config: $(buildroot_srcdir)
 	rm -rf $(dir $@)
