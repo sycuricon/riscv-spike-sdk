@@ -25,3 +25,6 @@
 [submodule "repo/gdb"]
 	path = repo/gdb
 	url = https://sourceware.org/git/binutils-gdb.git
+[submodule "repo/freebsd"]
+	path = repo/freebsd
+	url = https://github.com/freebsd/freebsd-src.git
