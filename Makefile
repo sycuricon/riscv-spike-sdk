@@ -32,7 +32,7 @@ freebsd_kernel := $(freebsd_rootfs)/boot/kernel/kernel
 freebsd_bench := $(freebsd_rootfs)/opt
 
 lmbench_srcdir := $(benchdir)/lmbench
-lmbench_wrkdir := $(wrkdir)/lmbench
+unixbench_srcdir := $(benchdir)/unixbench/UnixBench
 
 buildroot_srcdir := $(srcdir)/buildroot
 buildroot_initramfs_wrkdir := $(topdir)/rootfs/buildroot_initramfs
@@ -193,7 +193,6 @@ disk-image: $(freebsd_rootfs).img
 
 .PHONY: lmbench
 lmbench: $(lmbench_srcdir)
-	make -C $(lmbench_srcdir) clean
 	make -C $(lmbench_srcdir) build \
 		CC=$(toolchain_dest)/bin/clang \
 		AR=$(toolchain_dest)/bin/llvm-ar \
@@ -202,7 +201,7 @@ lmbench: $(lmbench_srcdir)
 			--sysroot=$(freebsd_rootfs) -B$(toolchain_dest)/bin \
 			-march=$(ISA) -mabi=$(ABI) -mno-relax -O3 \
 			-Wno-error=unused-command-line-argument -Werror=implicit-function-declaration \
-			-Werror=format -Werror=incompatible-pointer-types -Werror=cheri-prototypes -Werror=pass-failed \
+			-Werror=format -Werror=incompatible-pointer-types -Werror=pass-failed \
 			-Werror=undefined-internal" \
 		LDFLAGS="-target riscv64-unknown-freebsd16 \
 			--sysroot=$(freebsd_rootfs) -B$(toolchain_dest)/bin \
@@ -210,6 +209,21 @@ lmbench: $(lmbench_srcdir)
 			--ld-path=$(toolchain_dest)/bin/ld.lld"
 	mkdir -p $(freebsd_bench)/lmbench
 	cp -r $(lmbench_srcdir)/bin/riscv-FreeBSD/* $(freebsd_bench)/lmbench/
+
+.PHONY: unixbench
+unixbench: $(unixbench_srcdir)
+	make -C $(unixbench_srcdir) \
+		CC=$(toolchain_dest)/bin/clang OSNAME=freebsd ARCHNAME=$(ISA) \
+		CFLAGS="-target riscv64-unknown-freebsd16 \
+			--sysroot=$(freebsd_rootfs) -B$(toolchain_dest)/bin \
+			-march=$(ISA) -mabi=$(ABI) -mno-relax -O3 \
+			-Wno-error=unused-command-line-argument -Werror=implicit-function-declaration \
+			-Werror=format -Werror=incompatible-pointer-types -Werror=pass-failed \
+			-Werror=undefined-internal" \
+		LDFLAGS="-target riscv64-unknown-freebsd16 \
+			--sysroot=$(freebsd_rootfs) -B$(toolchain_dest)/bin \
+			-march=$(ISA) -mabi=$(ABI) -mno-relax -fuse-ld=lld \
+			--ld-path=$(toolchain_dest)/bin/ld.lld"
 
 $(buildroot_initramfs_wrkdir)/.config: $(buildroot_srcdir)
 	rm -rf $(dir $@)
