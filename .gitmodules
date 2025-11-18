@@ -31,3 +31,6 @@
 [submodule "benchmark/lmbench"]
 	path = benchmark/lmbench
 	url = https://github.com/SigRISCV/lmbench.git
+[submodule "benchmark/unixbench"]
+	path = benchmark/unixbench
+	url = https://github.com/SigRISCV/unixbench.git
