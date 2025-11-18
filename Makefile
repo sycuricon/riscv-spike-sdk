@@ -178,9 +178,6 @@ distribution: $(freebsd_wrkdir)
 $(freebsd_rootfs).img : $(freebsd_rootfs)
 	cp -r $(confdir)/freebsd_conf/* $(freebsd_rootfs)
 	python3 $(scriptdir)/get_mainfest.py $(freebsd_rootfs) $(freebsd_wrkdir)/METALOG.custom
-	cd $(freebsd_rootfs) && $(freebsd_wrkdir_legacy)/bin/makefs -t msdos -s 2m \
-		-B le -N $(freebsd_rootfs)/etc \
-		$(freebsd_rootfs).efi.img $(confdir)/freebsd.mtree
 	cd $(freebsd_rootfs) && $(freebsd_wrkdir_legacy)/bin/makefs -t ffs \
 		-o version=2,label=root -o softupdates=1 -Z -b 2g -f 200k -R 4m -M 256m \
 		-B le -N $(freebsd_rootfs)/etc  \
