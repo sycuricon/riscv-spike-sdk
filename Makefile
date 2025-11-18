@@ -167,7 +167,8 @@ distribution: $(freebsd_wrkdir)
 	nice $(freebsd_srcdir)/tools/build/make.py -j$(shell nproc) distribution \
 		$(FREEBSD_ARGS) DESTDIR=$(freebsd_rootfs)
 
-disk-image: $(freebsd_rootfs)
+.PHONY: disk-image
+$(freebsd_rootfs).img : $(freebsd_rootfs)
 	cp -r $(confdir)/freebsd_conf/* $(freebsd_rootfs)
 	python3 $(scriptdir)/get_mainfest.py $(freebsd_rootfs) $(freebsd_wrkdir)/METALOG.custom
 	cd $(freebsd_rootfs) && $(freebsd_wrkdir_legacy)/bin/makefs -t msdos -s 2m \
@@ -184,6 +185,7 @@ disk-image: $(freebsd_rootfs)
 		-o $(freebsd_rootfs).img
 	rm -f $(freebsd_rootfs).root.img
 	$(toolchain_dest)/bin/qemu-img info $(freebsd_rootfs).img
+disk-image: $(freebsd_rootfs).img
 
 $(buildroot_initramfs_wrkdir)/.config: $(buildroot_srcdir)
 	rm -rf $(dir $@)
@@ -341,7 +343,7 @@ ifeq ($(BL),opensbi)
 spike-run: $(fw_jump) $(spike)
 	$(spike) --isa=$(ISA)_zicntr_zihpm --kernel $(linux_image) $(fw_jump)
 
-qemu-run: $(qemu) $(fw_jump)
+qemu-run: $(qemu) $(fw_jump) $(freebsd_rootfs).img
 	$(qemu) -M virt -m 2048 -nographic -bios $(fw_jump) \
 		-kernel $(freebsd_rootfs)/boot/kernel/kernel \
 		-drive if=none,file=$(freebsd_rootfs).img,id=drv,format=raw \
