@@ -185,6 +185,12 @@ disk-image: $(freebsd_rootfs)
 	rm -f $(freebsd_rootfs).root.img
 	$(toolchain_dest)/bin/qemu-img info $(freebsd_rootfs).img
 
+$(buildroot_initramfs_wrkdir)/.config: $(buildroot_srcdir)
+	rm -rf $(dir $@)
+	mkdir -p $(dir $@)
+	cp $(buildroot_initramfs_config) $@
+	$(MAKE) -C $< RISCV=$(RISCV) PATH="$(PATH)" O=$(buildroot_initramfs_wrkdir) olddefconfig CROSS_COMPILE=riscv64-unknown-linux-gnu-
+
 $(buildroot_initramfs_tar): $(buildroot_srcdir) $(buildroot_initramfs_wrkdir)/.config $(buildroot_initramfs_config)
 	$(MAKE) -C $< RISCV=$(RISCV) PATH="$(PATH)" O=$(buildroot_initramfs_wrkdir)
 
