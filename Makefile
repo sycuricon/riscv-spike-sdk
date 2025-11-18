@@ -175,7 +175,7 @@ distribution: $(freebsd_wrkdir)
 		$(FREEBSD_ARGS) DESTDIR=$(freebsd_rootfs)
 
 .PHONY: disk-image
-$(freebsd_rootfs).img : $(freebsd_rootfs)
+disk-image $(freebsd_rootfs).img : $(freebsd_rootfs)
 	cp -r $(confdir)/freebsd_conf/* $(freebsd_rootfs)
 	python3 $(scriptdir)/get_mainfest.py $(freebsd_rootfs) $(freebsd_wrkdir)/METALOG.custom
 	cd $(freebsd_rootfs) && $(freebsd_wrkdir_legacy)/bin/makefs -t ffs \
@@ -183,13 +183,11 @@ $(freebsd_rootfs).img : $(freebsd_rootfs)
 		-B le -N $(freebsd_rootfs)/etc  \
 		$(freebsd_rootfs).root.img $(freebsd_wrkdir)/METALOG.custom
 	cd $(freebsd_rootfs) && $(freebsd_wrkdir_legacy)/bin/mkimg -s gpt \
-		-p efi:=$(freebsd_rootfs).efi.img \
 		-p freebsd-ufs:=$(freebsd_rootfs).root.img \
 		-p freebsd-swap/swap::2G \
 		-o $(freebsd_rootfs).img
 	rm -f $(freebsd_rootfs).root.img
 	$(toolchain_dest)/bin/qemu-img info $(freebsd_rootfs).img
-disk-image: $(freebsd_rootfs).img
 
 .PHONY: lmbench
 lmbench: $(lmbench_srcdir)
@@ -224,6 +222,9 @@ unixbench: $(unixbench_srcdir)
 			--sysroot=$(freebsd_rootfs) -B$(toolchain_dest)/bin \
 			-march=$(ISA) -mabi=$(ABI) -mno-relax -fuse-ld=lld \
 			--ld-path=$(toolchain_dest)/bin/ld.lld"
+	mkdir -p $(freebsd_bench)/unixbench
+	cp $(unixbench_srcdir)/pgms/* $(freebsd_bench)/unixbench
+	cp $(unixbench_srcdir)/testdir/sort.src $(freebsd_bench)/unixbench
 
 $(buildroot_initramfs_wrkdir)/.config: $(buildroot_srcdir)
 	rm -rf $(dir $@)
