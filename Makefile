@@ -71,6 +71,11 @@ openocd_srcdir := $(srcdir)/riscv-openocd
 openocd_wrkdir := $(wrkdir)/riscv-openocd
 openocd := $(toolchain_dest)/bin/openocd
 
+gdb_srcdir := $(srcdir)/gdb
+gdb_native_wrkdir := $(wrkdir)/gdb-native
+gdb_cross_wrkdir := $(wrkdir)/gdb-cross
+gdb_native := $(toolchain_dest)/bin/gdb
+
 .PHONY: all
 all: $(vmlinux)
 
@@ -175,7 +180,7 @@ distribution: $(freebsd_wrkdir)
 		$(FREEBSD_ARGS) DESTDIR=$(freebsd_rootfs)
 
 .PHONY: disk-image
-disk-image $(freebsd_rootfs).img : $(freebsd_rootfs)
+disk-image $(freebsd_rootfs_img) : $(freebsd_rootfs)
 	cp -r $(confdir)/freebsd_conf/* $(freebsd_rootfs)
 	python3 $(scriptdir)/get_mainfest.py $(freebsd_rootfs) $(freebsd_wrkdir)/METALOG.custom
 	cd $(freebsd_rootfs) && $(freebsd_wrkdir_legacy)/bin/makefs -t ffs \
@@ -185,7 +190,7 @@ disk-image $(freebsd_rootfs).img : $(freebsd_rootfs)
 	cd $(freebsd_rootfs) && $(freebsd_wrkdir_legacy)/bin/mkimg -s gpt \
 		-p freebsd-ufs:=$(freebsd_rootfs).root.img \
 		-p freebsd-swap/swap::2G \
-		-o $(freebsd_rootfs).img
+		-o $(freebsd_rootfs_img)
 	rm -f $(freebsd_rootfs).root.img
 	$(toolchain_dest)/bin/qemu-img info $(freebsd_rootfs).img
 
@@ -361,6 +366,22 @@ $(openocd): $(openocd_srcdir)
 	$(MAKE) -C $(openocd_wrkdir) install
 	touch -c $@
 
+.PHONY: gdb-native
+$(gdb_native): $(gdb_srcdir)
+	mkdir -p $(gdb_native_wrkdir)
+	cd $(gdb_native_wrkdir) && $</configure \
+		--disable-nls --enable-tui --disable-ld --disable-libstdcxx \
+		--disable-gold --disable-sim --disable-werror \
+		--enable-64-bit-bfd --without-gnu-as \
+		--prefix=$(toolchain_dest) \
+		--enable-targets=all \
+		CC=/usr/bin/clang CXX=/usr/bin/clang++ \
+		CFLAGS='-O2 -fcommon' CXXFLAGS='-O2 -fcommon'
+	$(MAKE) -C $(gdb_native_wrkdir) -j$(shell nproc) all-gdb
+	$(MAKE) -C $(gdb_native_wrkdir) -j$(shell nproc) all-binutils
+	$(MAKE) -C $(gdb_native_wrkdir) -j$(shell nproc) all-ld
+	$(MAKE) -C $(gdb_native_wrkdir) install-gdb
+gdb-native: $(gdb_native)
 
 .PHONY: buildroot_initramfs_sysroot vmlinux bbl fw_jump openocd
 buildroot_initramfs_sysroot: $(buildroot_initramfs_sysroot)
@@ -384,13 +405,20 @@ spike-run: $(fw_jump) $(spike)
 
 qemu-run: $(qemu) $(fw_jump) $(freebsd_rootfs).img
 	$(qemu) -M virt -m 2048 -nographic -bios $(fw_jump) \
-		-kernel $(freebsd_rootfs)/boot/kernel/kernel \
-		-drive if=none,file=$(freebsd_rootfs).img,id=drv,format=raw \
+		-kernel $(freebsd_kernel) \
+		-drive if=none,file=$(freebsd_rootfs_img),id=drv,format=raw \
 		-device virtio-blk-device,drive=drv \
 		-device virtio-rng-pci
 
 qemu-debug: $(qemu) $(fw_jump)
-	$(qemu) -nographic -machine virt -cpu rv64,sv57=on -m 2048M -bios $(fw_jump) -kernel $(linux_image) -s -S
+	$(qemu) -M virt -m 2048 -nographic -bios $(fw_jump) \
+		-kernel $(freebsd_kernel) \
+		-drive if=none,file=$(freebsd_rootfs_img),id=drv,format=raw \
+		-device virtio-blk-device,drive=drv \
+		-device virtio-rng-pci -S -s
+
+qemu-link: $(gdb_native)
+	$(gdb_native) $(freebsd_kernel)
 
 else ifeq ($(BL),bbl)
 spike-run: $(bbl) $(spike)
