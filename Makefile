@@ -13,6 +13,7 @@ topdir := $(topdir:/=)
 srcdir := $(topdir)/repo
 confdir := $(topdir)/conf
 wrkdir := $(CURDIR)/build
+scriptdir := $(topdir)/scripts
 
 toolchain_dest := $(CURDIR)/toolchain
 
@@ -20,6 +21,11 @@ llvm_srcdir	 :=	$(srcdir)/llvm-project
 llvm_wrkdir	 :=	$(wrkdir)/llvm-project
 llvm_sysroot :=	$(toolchain_dest)/sysroot
 LLVM_VERSION :=  Release
+
+freebsd_srcdir := $(srcdir)/freebsd
+freebsd_wrkdir := $(wrkdir)/freebsd
+freebsd_wrkdir_legacy := $(freebsd_wrkdir)/$(freebsd_srcdir)/riscv.riscv64/tmp/legacy
+freebsd_rootfs := $(topdir)/rootfs/freebsd_sysroot
 
 buildroot_srcdir := $(srcdir)/buildroot
 buildroot_initramfs_wrkdir := $(topdir)/rootfs/buildroot_initramfs
@@ -75,14 +81,109 @@ $(toolchain_dest)/bin/clang: $(llvm_srcdir)
 		$(llvm_srcdir)/llvm
 	free -h
 	$(CMAKE) --build $(llvm_wrkdir) --target install
-
 llvm: $(toolchain_dest)/bin/clang
 
-$(buildroot_initramfs_wrkdir)/.config: $(buildroot_srcdir)
-	rm -rf $(dir $@)
-	mkdir -p $(dir $@)
-	cp $(buildroot_initramfs_config) $@
-	$(MAKE) -C $< RISCV=$(RISCV) PATH="$(PATH)" O=$(buildroot_initramfs_wrkdir) olddefconfig CROSS_COMPILE=riscv64-linux-gnu-
+FREEBSD_ENV := MAKEOBJDIRPREFIX=$(freebsd_wrkdir) \
+	X_COMPILER_TYPE=clang \
+	CC=/usr/bin/clang \
+	CXX=/usr/bin/clang++ \
+	CPP=/usr/bin/clang-cpp-18 \
+	STRIPBIN=/usr/bin/strip \
+	XCC=$(toolchain_dest)/bin/clang \
+	XCXX=$(toolchain_dest)/bin/clang++ \
+	XCPP=$(toolchain_dest)/bin/clang-cpp \
+	XLD=$(toolchain_dest)/bin/ld.lld
+
+FREEBSD_TARGET := TARGET=riscv \
+	TARGET_ARCH=riscv64 \
+	TARGET_CPUTYPE= 
+
+FREEBSD_WNO := "-Wno-unterminated-string-initialization -Wno-switch \
+	-Wno-cast-function-type-mismatch -Wno-unused -Wno-format -Wno-parentheses \
+	-Wno-string-plus-int -Wno-address-of-packed-member -Wno-tautological-pointer-compare\
+	-Wno-implicit-enum-enum-cast -Wno-empty-body -Wno-incompatible-pointer-types-discards-qualifiers \
+	-Wno-tautological-constant-out-of-range-compare -Wno-uninitialized"
+
+FREEBSD_TOOL := LD=$(toolchain_dest)/bin/ld.lld \
+	AR=$(toolchain_dest)/bin/llvm-ar \
+	NM=$(toolchain_dest)/bin/llvm-nm \
+	SIZE=$(toolchain_dest)/bin/llvm-size \
+	STRIPBIN=$(toolchain_dest)/bin/llvm-strip \
+	STRINGS=$(toolchain_dest)/bin/llvm-strings \
+	OBJCOPY=$(toolchain_dest)/bin/llvm-objcopy \
+	RANLIB=$(toolchain_dest)/bin/llvm-ranlib \
+	LLVM_LINK=$(toolchain_dest)/bin/llvm-link \
+	XLD=$(toolchain_dest)/bin/ld.lld \
+	XAR=$(toolchain_dest)/bin/llvm-ar \
+	XNM=$(toolchain_dest)/bin/llvm-nm \
+	XSIZE=$(toolchain_dest)/bin/llvm-size \
+	XSTRIPBIN=$(toolchain_dest)/bin/llvm-strip \
+	XSTRINGS=$(toolchain_dest)/bin/llvm-strings \
+	XOBJCOPY=$(toolchain_dest)/bin/llvm-objcopy \
+	XRANLIB=$(toolchain_dest)/bin/llvm-ranlib \
+	XLLVM_LINK=$(toolchain_dest)/bin/llvm-link
+
+FREEBSD_OPT := -DDB_FROM_SRC -DI_REALLY_MEAN_NO_CLEAN -DNO_ROOT -DBUILD_WITH_STRICT_TMPPATH -DWITHOUT_EFI \
+	-DWITHOUT_CLEAN -DWITH_TESTS -DWITHOUT_INIT_ALL_ZERO -DWITHOUT_INIT_ALL_PATTERN \
+	-DWITHOUT_MAN -DWITHOUT_MAIL -DWITH_DISK_IMAGE_TOOLS_BOOTSTRAP -DWITHOUT_PROFILE \
+	-DWITHOUT_OFED -DWITH_MALLOC_PRODUCTION -DWITHOUT_GCC -DWITHOUT_CLANG -DWITHOUT_LLD \
+	-DWITHOUT_LLDB -DWITHOUT_GCC_BOOTSTRAP -DWITHOUT_CLANG_BOOTSTRAP -DWITHOUT_LLD_BOOTSTRAP \
+	-DWITHOUT_LIB32 -DWITH_ELFTOOLCHAIN_BOOTSTRAP -DWITH_TOOLCHAIN -DWITHOUT_BINUTILS_BOOTSTRAP
+
+FREEBSD_ARGS := $(FREEBSD_TARGET) \
+	CWARNFLAGS.clang=$(FREEBSD_WNO) \
+	$(FREEBSD_TOOL) \
+	$(FREEBSD_OPT) -s -de
+
+buildworld: $(freebsd_srcdir) $(toolchain_dest)/bin/clang
+	mkdir -p $(freebsd_wrkdir)
+	cd $(freebsd_srcdir) && env $(FREEBSD_ENV) \
+	nice $(freebsd_srcdir)/tools/build/make.py -j$(shell nproc) buildworld \
+		$(FREEBSD_ARGS)
+
+buildkernel: $(freebsd_wrkdir)
+	cp $(confdir)/QEMU $(freebsd_srcdir)/sys/riscv/conf/QEMU
+	cd $(freebsd_srcdir) && env $(FREEBSD_ENV) \
+	nice $(freebsd_srcdir)/tools/build/make.py -j$(shell nproc) buildkernel \
+		'KERNCONF=QEMU' DEBUG=-g $(FREEBSD_ARGS)
+
+installworld: $(freebsd_wrkdir)
+	rm -rf $(freebsd_rootfs)/METALOG.world
+	cd $(freebsd_srcdir) && env $(FREEBSD_ENV) \
+		DESTDIR=$(freebsd_rootfs) METALOG=$(freebsd_rootfs)/METALOG.world \
+	nice $(freebsd_srcdir)/tools/build/make.py -j$(shell nproc) installworld \
+		$(FREEBSD_ARGS) DESTDIR=$(freebsd_rootfs)
+
+installkernel: $(freebsd_wrkdir)
+	rm -rf $(freebsd_rootfs)/METALOG.kernel
+	cd $(freebsd_srcdir) && env $(FREEBSD_ENV) \
+		DESTDIR=$(freebsd_rootfs) METALOG=$(freebsd_rootfs)/METALOG.kernel \
+	nice $(freebsd_srcdir)/tools/build/make.py -j$(shell nproc) installkernel \
+		'KERNCONF=QEMU' DEBUG=-g $(FREEBSD_ARGS) DESTDIR=$(freebsd_rootfs)
+
+distribution: $(freebsd_wrkdir)
+	cd $(freebsd_srcdir) && env $(FREEBSD_ENV) \
+		DESTDIR=$(freebsd_rootfs) METALOG=$(freebsd_rootfs)/METALOG.world \
+	nice $(freebsd_srcdir)/tools/build/make.py -j$(shell nproc) distribution \
+		$(FREEBSD_ARGS) DESTDIR=$(freebsd_rootfs)
+
+disk-image: $(freebsd_rootfs)
+	cp -r $(confdir)/freebsd_conf/* $(freebsd_rootfs)
+	python3 $(scriptdir)/get_mainfest.py $(freebsd_rootfs) $(freebsd_wrkdir)/METALOG.custom
+	cd $(freebsd_rootfs) && $(freebsd_wrkdir_legacy)/bin/makefs -t msdos -s 2m \
+		-B le -N $(freebsd_rootfs)/etc \
+		$(freebsd_rootfs).efi.img $(confdir)/freebsd.mtree
+	cd $(freebsd_rootfs) && $(freebsd_wrkdir_legacy)/bin/makefs -t ffs \
+		-o version=2,label=root -o softupdates=1 -Z -b 2g -f 200k -R 4m -M 256m \
+		-B le -N $(freebsd_rootfs)/etc  \
+		$(freebsd_rootfs).root.img $(freebsd_wrkdir)/METALOG.custom
+	cd $(freebsd_rootfs) && $(freebsd_wrkdir_legacy)/bin/mkimg -s gpt \
+		-p efi:=$(freebsd_rootfs).efi.img \
+		-p freebsd-ufs:=$(freebsd_rootfs).root.img \
+		-p freebsd-swap/swap::2G \
+		-o $(freebsd_rootfs).img
+	rm -f $(freebsd_rootfs).root.img
+	$(toolchain_dest)/bin/qemu-img info $(freebsd_rootfs).img
 
 $(buildroot_initramfs_tar): $(buildroot_srcdir) $(buildroot_initramfs_wrkdir)/.config $(buildroot_initramfs_config)
 	$(MAKE) -C $< RISCV=$(RISCV) PATH="$(PATH)" O=$(buildroot_initramfs_wrkdir)
@@ -235,7 +336,11 @@ spike-run: $(fw_jump) $(spike)
 	$(spike) --isa=$(ISA)_zicntr_zihpm --kernel $(linux_image) $(fw_jump)
 
 qemu-run: $(qemu) $(fw_jump)
-	$(qemu) -nographic -machine virt -cpu rv64,sv57=on -m 2048M -bios $(fw_jump) -kernel $(linux_image)
+	$(qemu) -M virt -m 2048 -nographic -bios $(fw_jump) \
+		-kernel $(freebsd_rootfs)/boot/kernel/kernel \
+		-drive if=none,file=$(freebsd_rootfs).img,id=drv,format=raw \
+		-device virtio-blk-device,drive=drv \
+		-device virtio-rng-pci
 
 qemu-debug: $(qemu) $(fw_jump)
 	$(qemu) -nographic -machine virt -cpu rv64,sv57=on -m 2048M -bios $(fw_jump) -kernel $(linux_image) -s -S
