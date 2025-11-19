@@ -391,7 +391,7 @@ endif
 
 LINUX_EXTRA_ARGS :=
 ifeq ($(MODE),LLVM)
-	LINUX_EXTRA_ARGS := HOSTCC=gcc \
+	LINUX_EXTRA_ARGS += HOSTCC=gcc \
 		HOSTCXX=g++ \
 		$(LLVM_CROSS_TOOLCHAIN) \
 		LLVM=1 LLVM_IAS=1
@@ -441,7 +441,7 @@ $(pk): $(pk_srcdir) $(RISCV)/bin/$(target_newlib)-gcc
 
 OPENSBI_EXTRA_ARGS :=
 ifeq ($(MODE),LLVM)
-	OPENSBI_EXTRA_ARGS := LLVM=$(toolchain_dest)/bin/
+	OPENSBI_EXTRA_ARGS += LLVM=$(toolchain_dest)/bin/
 endif
 
 $(fw_jump): $(opensbi_srcdir) $(linux_image) $(RISCV)/bin/clang
@@ -524,20 +524,21 @@ mrproper:
 
 ifeq ($(BL),opensbi)
 
+QEMU_RUN_ARGS := 
 ifeq ($(MODE),LLVM)
-	QEMU_RUN_ARGS := -M virt -m 2048 -nographic -bios $(fw_jump) \
+	QEMU_RUN_ARGS += -M virt -m 2048 -nographic -bios $(fw_jump) \
 		-kernel $(freebsd_kernel) \
 		-drive if=none,file=$(freebsd_rootfs_img),id=drv,format=raw \
 		-device virtio-blk-device,drive=drv \
 		-device virtio-rng-pci
 else
-	QEMU_RUN_ARGS := -nographic -machine virt -cpu rv64,sv57=on -m 2048M -bios $(fw_jump) -kernel $(linux_image)
+	QEMU_RUN_ARGS += -nographic -machine virt -cpu rv64,sv57=on -m 2048M -bios $(fw_jump) -kernel $(linux_image)
 endif
 
 spike-run: $(fw_jump) $(spike)
 	$(spike) --isa=$(ISA)_zicntr_zihpm --kernel $(linux_image) $(fw_jump)
 
-qemu-run: $(qemu) $(fw_jump) $(freebsd_rootfs).img
+qemu-run: $(qemu) $(fw_jump)
 	$(qemu) $(QEMU_RUN_ARGS)
 
 qemu-debug: $(qemu) $(fw_jump)
