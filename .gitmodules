@@ -34,3 +34,9 @@
 [submodule "repo/gdb"]
 	path = repo/gdb
 	url = https://sourceware.org/git/binutils-gdb.git
+[submodule "repo/cross/gmp"]
+	path = repo/cross/gmp
+	url = https://github.com/gmp-mirror/gmp.git
+[submodule "repo/cross/mpfr"]
+	path = repo/cross/mpfr
+	url = https://gitlab.inria.fr/mpfr/mpfr.git
