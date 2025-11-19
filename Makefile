@@ -444,7 +444,7 @@ ifeq ($(MODE),LLVM)
 	OPENSBI_EXTRA_ARGS += LLVM=$(toolchain_dest)/bin/
 endif
 
-$(fw_jump): $(opensbi_srcdir) $(linux_image) $(RISCV)/bin/clang
+$(fw_jump): $(opensbi_srcdir) $(linux_image)
 	rm -rf $(opensbi_wrkdir)
 	mkdir -p $(opensbi_wrkdir)
 	$(MAKE) -C $(opensbi_srcdir) FW_TEXT_START=0x80000000 \
