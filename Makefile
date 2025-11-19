@@ -30,6 +30,7 @@ freebsd_rootfs := $(topdir)/rootfs/freebsd_sysroot
 freebsd_rootfs_img := $(freebsd_rootfs).img
 freebsd_kernel := $(freebsd_rootfs)/boot/kernel/kernel
 freebsd_bench := $(freebsd_rootfs)/opt
+freebsd_usr_local := $(freebsd_rootfs)/usr/local
 
 lmbench_srcdir := $(benchdir)/lmbench
 unixbench_srcdir := $(benchdir)/unixbench/UnixBench
@@ -70,6 +71,14 @@ qemu :=  $(toolchain_dest)/bin/qemu-system-riscv64
 openocd_srcdir := $(srcdir)/riscv-openocd
 openocd_wrkdir := $(wrkdir)/riscv-openocd
 openocd := $(toolchain_dest)/bin/openocd
+
+gmp_srcdir := $(srcdir)/cross/gmp
+gmp_wrkdir := $(wrkdir)/gmp
+gmp_lib := $(freebsd_usr_local)/lib/libgmp.a
+
+mpfr_srcdir := $(srcdir)/cross/mpfr
+mpfr_wrkdir := $(wrkdir)/mpfr
+mpfr_lib := $(freebsd_usr_local)/lib/libmpfr.a
 
 gdb_srcdir := $(srcdir)/gdb
 gdb_native_wrkdir := $(wrkdir)/gdb-native
@@ -194,42 +203,114 @@ disk-image $(freebsd_rootfs_img) : $(freebsd_rootfs)
 	rm -f $(freebsd_rootfs).root.img
 	$(toolchain_dest)/bin/qemu-img info $(freebsd_rootfs).img
 
+LLVM_CROSS_TOOLCHAIN := CC=$(toolchain_dest)/bin/clang \
+		AS=$(toolchain_dest)/bin/clang \
+		CXX=$(toolchain_dest)/bin/clang++ \
+		LD=$(toolchain_dest)/bin/ld.lld \
+		AR=$(toolchain_dest)/bin/llvm-ar \
+		NM=$(toolchain_dest)/bin/llvm-nm \
+		OBJCOPY=$(toolchain_dest)/bin/llvm-objcopy \
+		OBJDUMP=$(toolchain_dest)/bin/llvm-objdump \
+		READELF=$(toolchain_dest)/bin/readelf \
+		STRIP=$(toolchain_dest)/bin/llvm-strip \
+		RANLIB=$(toolchain_dest)/bin/llvm-ranlib
+
+LLVM_CROSS_CFLAGS := -target riscv64-unknown-freebsd16 \
+			--sysroot=$(freebsd_rootfs) -B$(toolchain_dest)/bin \
+			-march=$(ISA) -mabi=$(ABI) -mno-relax
+
+LLVM_CROSS_NOWARN := -Wno-error=unused-command-line-argument -Werror=implicit-function-declaration \
+			-Werror=format -Werror=incompatible-pointer-types -Werror=pass-failed \
+			-Werror=undefined-internal -Wno-unused-command-line-argument
+
+LLVM_CROSS_CFLAGS_NOWARN = $(LLVM_CROSS_CFLAGS) $(LLVM_CROSS_NOWARN)
+
+LLVM_CROSS_LDFLAGS := -target riscv64-unknown-freebsd16 \
+			--sysroot=$(freebsd_rootfs) -B$(toolchain_dest)/bin \
+			-march=$(ISA) -mabi=$(ABI) -mno-relax -fuse-ld=lld \
+			--ld-path=$(toolchain_dest)/bin/ld.lld
+
 .PHONY: lmbench
 lmbench: $(lmbench_srcdir)
 	make -C $(lmbench_srcdir) build \
-		CC=$(toolchain_dest)/bin/clang \
-		AR=$(toolchain_dest)/bin/llvm-ar \
 		OS=riscv-FreeBSD \
-		CFLAGS="-target riscv64-unknown-freebsd16 \
-			--sysroot=$(freebsd_rootfs) -B$(toolchain_dest)/bin \
-			-march=$(ISA) -mabi=$(ABI) -mno-relax -O3 \
-			-Wno-error=unused-command-line-argument -Werror=implicit-function-declaration \
-			-Werror=format -Werror=incompatible-pointer-types -Werror=pass-failed \
-			-Werror=undefined-internal" \
-		LDFLAGS="-target riscv64-unknown-freebsd16 \
-			--sysroot=$(freebsd_rootfs) -B$(toolchain_dest)/bin \
-			-march=$(ISA) -mabi=$(ABI) -mno-relax -fuse-ld=lld \
-			--ld-path=$(toolchain_dest)/bin/ld.lld"
+		$(LLVM_CROSS_TOOLCHAIN) \
+		CFLAGS="$(LLVM_CROSS_CFLAGS_NOWARN) -O3" \
+		LDFLAGS="$(LLVM_CROSS_LDFLAGS)"
 	mkdir -p $(freebsd_bench)/lmbench
 	cp -r $(lmbench_srcdir)/bin/riscv-FreeBSD/* $(freebsd_bench)/lmbench/
 
 .PHONY: unixbench
 unixbench: $(unixbench_srcdir)
 	make -C $(unixbench_srcdir) \
-		CC=$(toolchain_dest)/bin/clang OSNAME=freebsd ARCHNAME=$(ISA) \
-		CFLAGS="-target riscv64-unknown-freebsd16 \
-			--sysroot=$(freebsd_rootfs) -B$(toolchain_dest)/bin \
-			-march=$(ISA) -mabi=$(ABI) -mno-relax -O3 \
-			-Wno-error=unused-command-line-argument -Werror=implicit-function-declaration \
-			-Werror=format -Werror=incompatible-pointer-types -Werror=pass-failed \
-			-Werror=undefined-internal" \
-		LDFLAGS="-target riscv64-unknown-freebsd16 \
-			--sysroot=$(freebsd_rootfs) -B$(toolchain_dest)/bin \
-			-march=$(ISA) -mabi=$(ABI) -mno-relax -fuse-ld=lld \
-			--ld-path=$(toolchain_dest)/bin/ld.lld"
+		OSNAME=freebsd ARCHNAME=$(ISA) \
+		$(LLVM_CROSS_TOOLCHAIN) \
+		CFLAGS="$(LLVM_CROSS_CFLAGS_NOWARN) -O3" \
+		LDFLAGS="$(LLVM_CROSS_LDFLAGS)"
 	mkdir -p $(freebsd_bench)/unixbench
 	cp $(unixbench_srcdir)/pgms/* $(freebsd_bench)/unixbench
 	cp $(unixbench_srcdir)/testdir/sort.src $(freebsd_bench)/unixbench
+
+LLVM_CROSS_TARGET := --prefix=$(freebsd_usr_local) \
+		--host=riscv64-unknown-freebsd16 \
+		--target=riscv64-unknown-freebsd16 \
+		--build=x86_64-pc-linux-gnu
+
+LLVM_CROSS_COMPILE_ARGS := CC='$(toolchain_dest)/bin/clang $(LLVM_CROSS_CFLAGS) $(LLVM_CROSS_LDFLAGS)' \
+		CXX='(toolchain_dest)/bin/clang++ $(LLVM_CROSS_CFLAGS) $(LLVM_CROSS_LDFLAGS)' \
+		CPP='$(toolchain_dest)/bin/clang-cpp  $(LLVM_CROSS_CFLAGS_NOWARN) $(LLVM_CROSS_LDFLAGS)' \
+		CFLAGS='$(LLVM_CROSS_CFLAGS_NOWARN)' \
+		CXXFLAGS='$(LLVM_CROSS_CFLAGS_NOWARN)' \
+		LDFLAGS='$(LLVM_CROSS_LDFLAGS)'
+
+.PHONY: gmp-cross
+gmp-cross $(gmp_lib): $(gmp_srcdir)
+	mkdir -p $(gmp_wrkdir)
+	cd $(gmp_srcdir) && ./.bootstrap
+	cd $(gmp_wrkdir) && $</configure \
+		$(LLVM_CROSS_TARGET) \
+		$(LLVM_CROSS_TOOLCHAIN) \
+		$(LLVM_CROSS_COMPILE_ARGS)
+	cd $(gmp_wrkdir) && $(MAKE) -j$(shell nproc)
+	cd $(gmp_wrkdir) && $(MAKE) install
+
+.PHONY: mpfr-cross
+mpfr-cross: $(mpfr_srcdir)
+	mkdir -p $(mpfr_wrkdir)
+	cd $(mpfr_srcdir) && ./autogen.sh
+	cd $(mpfr_wrkdir) && $</configure \
+		--with-gmp=$(freebsd_usr_local) \
+		$(LLVM_CROSS_TARGET) \
+		$(LLVM_CROSS_TOOLCHAIN) \
+		$(LLVM_CROSS_COMPILE_ARGS)
+	cd $(mpfr_wrkdir) && $(MAKE) -j$(shell nproc)
+	cd $(mpfr_wrkdir) && $(MAKE) install
+	
+
+GDB_LLVM_CROSS_CFLAGS_NOWARN := $(LLVM_CROSS_CFLAGS_NOWARN) -O2 -fcommon -DRL_NO_COMPAT -DLIBICONV_PLUG
+
+.PHONY: gdb-cross
+gdb-cross: $(gdb_srcdir) $(gmp_lib) $(mpfr_lib)
+	mkdir -p $(gdb_cross_wrkdir)
+	cd $(gdb_cross_wrkdir) && $</configure \
+		--with-gmp=$(freebsd_usr_local) \
+		--with-mpfr=$(freebsd_usr_local) \
+		--disable-shared --disable-nls --disable-libstdcxx --enable-tui \
+		--disable-ld --disable-gold --disable-sim --enable-64-bit-bfd --without-gnu-as \
+		--enable-targets=all --without-python --without-expat --without-libunwind-ia64 \
+		$(LLVM_CROSS_TARGET) \
+		$(LLVM_CROSS_TOOLCHAIN) \
+		CC='$(toolchain_dest)/bin/clang $(GDB_LLVM_CROSS_CFLAGS_NOWARN)' \
+		CXX='$(toolchain_dest)/bin/clang++ $(GDB_LLVM_CROSS_CFLAGS_NOWARN)' \
+		CPP='$(toolchain_dest)/bin/clang-cpp  $(GDB_LLVM_CROSS_CFLAGS_NOWARN)' \
+		CFLAGS='$(GDB_LLVM_CROSS_CFLAGS_NOWARN)' \
+		CXXFLAGS='$(GDB_LLVM_CROSS_CFLAGS_NOWARN)' \
+		LDFLAGS='-lelf -lmd $(LLVM_CROSS_LDFLAGS)'
+	$(MAKE) -C $(gdb_cross_wrkdir) -j$(shell nproc) all-gdb
+	$(MAKE) -C $(gdb_cross_wrkdir) -j$(shell nproc) all-binutils
+	$(MAKE) -C $(gdb_cross_wrkdir) -j$(shell nproc) all-ld
+	$(MAKE) -C $(gdb_cross_wrkdir) install-gdb
+	echo "export LD_LIBRARY_PATH=/usr/local/lib:\$$LD_LIBRARY_PATH" >> $(freebsd_rootfs)/root/.shrc
 
 $(buildroot_initramfs_wrkdir)/.config: $(buildroot_srcdir)
 	rm -rf $(dir $@)
@@ -275,17 +356,7 @@ $(vmlinux): $(linux_srcdir) $(linux_wrkdir)/.config $(buildroot_initramfs_sysroo
 		ARCH=riscv \
 		HOSTCC=gcc \
 		HOSTCXX=g++ \
-		CC=$(toolchain_dest)/bin/clang \
-		AS=$(toolchain_dest)/bin/clang \
-		CXX=$(toolchain_dest)/bin/clang++ \
-		LD=$(toolchain_dest)/bin/ld.lld \
-		AR=$(toolchain_dest)/bin/llvm-ar \
-		NM=$(toolchain_dest)/bin/llvm-nm \
-		OBJCOPY=$(toolchain_dest)/bin/llvm-objcopy \
-		OBJDUMP=$(toolchain_dest)/bin/llvm-objdump \
-		READELF=$(toolchain_dest)/bin/readelf \
-		STRIP=$(toolchain_dest)/bin/llvm-strip \
-		RANLIB=$(toolchain_dest)/bin/llvm-ranlib \
+		$(LLVM_CROSS_TOOLCHAIN) \
 		LLVM=1 LLVM_IAS=1 \
 		all
 
