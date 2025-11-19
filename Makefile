@@ -6,6 +6,7 @@ ISA ?= rv64imafdc_zifencei_zicsr
 ABI ?= lp64d
 BL ?= opensbi
 BOARD ?= spike
+MODE ?= GNU
 CMAKE := cmake
 
 topdir := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
@@ -16,6 +17,8 @@ wrkdir := $(CURDIR)/build
 scriptdir := $(topdir)/scripts
 benchdir := $(topdir)/benchmark
 
+toolchain_srcdir := $(srcdir)/riscv-gnu-toolchain
+toolchain_wrkdir := $(wrkdir)/riscv-gnu-toolchain
 toolchain_dest := $(CURDIR)/toolchain
 
 llvm_srcdir	 :=	$(srcdir)/llvm-project
@@ -91,9 +94,6 @@ gdb_native_wrkdir := $(wrkdir)/gdb-native
 gdb_cross_wrkdir := $(wrkdir)/gdb-cross
 gdb_native := $(toolchain_dest)/bin/gdb
 gdb_cross := $(freebsd_usr_local)/bin/gdb
-
-.PHONY: all
-all: $(vmlinux)
 
 .PHONY: llvm
 llvm $(toolchain_dest)/bin/clang: $(llvm_srcdir)
@@ -326,6 +326,34 @@ gdb-cross $(gdb_cross): $(gdb_srcdir) $(gmp_lib) $(mpfr_lib)
 	$(MAKE) -C $(gdb_cross_wrkdir) install-gdb
 	echo "export LD_LIBRARY_PATH=/usr/local/lib:\$$LD_LIBRARY_PATH" >> $(freebsd_rootfs)/root/.shrc
 
+.PHONY: all
+all: $(vmlinux)
+
+newlib: $(RISCV)/bin/$(target_newlib)-gcc
+
+
+ifneq ($(RISCV),$(toolchain_dest))
+$(RISCV)/bin/$(target_linux)-gcc:
+	$(error The RISCV environment variable was set, but is not pointing at a toolchain install tree)
+endif
+
+$(toolchain_dest)/bin/$(target_linux)-gcc:
+	mkdir -p $(toolchain_wrkdir)
+	$(MAKE) -C $(linux_srcdir) O=$(toolchain_wrkdir) ARCH=riscv INSTALL_HDR_PATH=$(abspath $(toolchain_srcdir)/linux-headers) headers_install
+	cd $(toolchain_wrkdir); $(toolchain_srcdir)/configure \
+		--prefix=$(toolchain_dest) \
+		--with-arch=$(ISA) \
+		--with-abi=$(ABI) 
+	$(MAKE) -C $(toolchain_wrkdir) linux
+	# sed 's/^#define LINUX_VERSION_CODE.*/#define LINUX_VERSION_CODE 329226/' -i $(toolchain_dest)/sysroot/usr/include/linux/version.h
+
+$(toolchain_dest)/bin/$(target_newlib)-gcc:
+	mkdir -p $(toolchain_wrkdir)
+	cd $(toolchain_wrkdir); $(toolchain_srcdir)/configure \
+		--prefix=$(toolchain_dest) \
+		--enable-multilib
+	$(MAKE) -C $(toolchain_wrkdir) 
+
 $(buildroot_initramfs_wrkdir)/.config: $(buildroot_srcdir)
 	rm -rf $(dir $@)
 	mkdir -p $(dir $@)
@@ -348,17 +376,25 @@ $(buildroot_initramfs_sysroot): $(buildroot_initramfs_tar)
 $(linux_wrkdir)/.config: $(linux_defconfig) $(linux_srcdir) $(toolchain_dest)/bin/clang
 	mkdir -p $(dir $@)
 	cp -p $< $@
-	$(MAKE) -C $(linux_srcdir) O=$(linux_wrkdir) ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- olddefconfig
+	$(MAKE) -C $(linux_srcdir) O=$(linux_wrkdir) ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- olddefconfig
 	echo $(ISA)
 	echo $(filter rv32%,$(ISA))
 ifeq (,$(filter rv%c,$(ISA)))
 	sed 's/^.*CONFIG_RISCV_ISA_C.*$$/CONFIG_RISCV_ISA_C=n/' -i $@
-	$(MAKE) -C $(linux_srcdir) O=$(linux_wrkdir) ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- olddefconfig
+	$(MAKE) -C $(linux_srcdir) O=$(linux_wrkdir) ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- olddefconfig
 endif
 ifeq ($(ISA),$(filter rv32%,$(ISA)))
 	sed 's/^.*CONFIG_ARCH_RV32I.*$$/CONFIG_ARCH_RV32I=y/' -i $@
 	sed 's/^.*CONFIG_ARCH_RV64I.*$$/CONFIG_ARCH_RV64I=n/' -i $@
-	$(MAKE) -C $(linux_srcdir) O=$(linux_wrkdir) ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- olddefconfig
+	$(MAKE) -C $(linux_srcdir) O=$(linux_wrkdir) ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- olddefconfig
+endif
+
+LINUX_EXTRA_ARGS :=
+ifeq ($(MODE),LLVM)
+	LINUX_EXTRA_ARGS := HOSTCC=gcc \
+		HOSTCXX=g++ \
+		$(LLVM_CROSS_TOOLCHAIN) \
+		LLVM=1 LLVM_IAS=1
 endif
 
 $(vmlinux): $(linux_srcdir) $(linux_wrkdir)/.config $(buildroot_initramfs_sysroot) 
@@ -368,10 +404,7 @@ $(vmlinux): $(linux_srcdir) $(linux_wrkdir)/.config $(buildroot_initramfs_sysroo
 		CONFIG_INITRAMFS_ROOT_GID=$(shell id -g) \
 		CROSS_COMPILE=riscv64-unknown-linux-gnu- \
 		ARCH=riscv \
-		HOSTCC=gcc \
-		HOSTCXX=g++ \
-		$(LLVM_CROSS_TOOLCHAIN) \
-		LLVM=1 LLVM_IAS=1 \
+		$(LINUX_EXTRA_ARGS) \
 		all
 
 $(vmlinux_stripped): $(vmlinux)
@@ -381,8 +414,8 @@ $(linux_image): $(vmlinux)
 
 .PHONY: linux-menuconfig
 linux-menuconfig: $(linux_wrkdir)/.config
-	$(MAKE) -C $(linux_srcdir) O=$(dir $<) ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- menuconfig
-	$(MAKE) -C $(linux_srcdir) O=$(dir $<) ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- savedefconfig
+	$(MAKE) -C $(linux_srcdir) O=$(dir $<) ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- menuconfig
+	$(MAKE) -C $(linux_srcdir) O=$(dir $<) ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- savedefconfig
 	# cp $(dir $<)/defconfig conf/linux_defconfig
 
 $(bbl): $(pk_srcdir) $(vmlinux_stripped) $(DTS)
@@ -406,12 +439,17 @@ $(pk): $(pk_srcdir) $(RISCV)/bin/$(target_newlib)-gcc
 	CFLAGS="-mabi=$(ABI) -march=$(ISA)" $(MAKE) -C $(pk_wrkdir)
 	$(MAKE) -C $(pk_wrkdir) install
 
+OPENSBI_EXTRA_ARGS :=
+ifeq ($(MODE),LLVM)
+	OPENSBI_EXTRA_ARGS := LLVM=$(toolchain_dest)/bin/
+endif
+
 $(fw_jump): $(opensbi_srcdir) $(linux_image) $(RISCV)/bin/clang
 	rm -rf $(opensbi_wrkdir)
 	mkdir -p $(opensbi_wrkdir)
 	$(MAKE) -C $(opensbi_srcdir) FW_TEXT_START=0x80000000 \
-		FW_PAYLOAD_PATH=$(linux_image) PLATFORM=generic O=$(opensbi_wrkdir) CROSS_COMPILE=riscv64-linux-gnu- \
-		LLVM=$(toolchain_dest)/bin/
+		FW_PAYLOAD_PATH=$(linux_image) PLATFORM=generic O=$(opensbi_wrkdir) CROSS_COMPILE=riscv64-unknown-linux-gnu- \
+		$(OPENSBI_EXTRA_ARGS)
 
 .PHONY: spike
 $(spike): $(spike_srcdir) 
@@ -485,22 +523,25 @@ mrproper:
 .PHONY: spike qemu-run
 
 ifeq ($(BL),opensbi)
-spike-run: $(fw_jump) $(spike)
-	$(spike) --isa=$(ISA)_zicntr_zihpm --kernel $(linux_image) $(fw_jump)
 
-qemu-run: $(qemu) $(fw_jump) $(freebsd_rootfs).img
-	$(qemu) -M virt -m 2048 -nographic -bios $(fw_jump) \
+ifeq ($(MODE),LLVM)
+	QEMU_RUN_ARGS := -M virt -m 2048 -nographic -bios $(fw_jump) \
 		-kernel $(freebsd_kernel) \
 		-drive if=none,file=$(freebsd_rootfs_img),id=drv,format=raw \
 		-device virtio-blk-device,drive=drv \
 		-device virtio-rng-pci
+else
+	QEMU_RUN_ARGS := -nographic -machine virt -cpu rv64,sv57=on -m 2048M -bios $(fw_jump) -kernel $(linux_image)
+endif
+
+spike-run: $(fw_jump) $(spike)
+	$(spike) --isa=$(ISA)_zicntr_zihpm --kernel $(linux_image) $(fw_jump)
+
+qemu-run: $(qemu) $(fw_jump) $(freebsd_rootfs).img
+	$(qemu) $(QEMU_RUN_ARGS)
 
 qemu-debug: $(qemu) $(fw_jump)
-	$(qemu) -M virt -m 2048 -nographic -bios $(fw_jump) \
-		-kernel $(freebsd_kernel) \
-		-drive if=none,file=$(freebsd_rootfs_img),id=drv,format=raw \
-		-device virtio-blk-device,drive=drv \
-		-device virtio-rng-pci -S -s
+	$(qemu) $(QEMU_RUN_ARGS) -S -s
 
 qemu-link: $(gdb_native)
 	$(gdb_native) $(freebsd_kernel)
