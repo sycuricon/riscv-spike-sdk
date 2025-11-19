@@ -40,3 +40,6 @@
 [submodule "repo/cross/mpfr"]
 	path = repo/cross/mpfr
 	url = https://gitlab.inria.fr/mpfr/mpfr.git
+[submodule "repo/riscv-gnu-toolchain"]
+	path = repo/riscv-gnu-toolchain
+	url = https://github.com/riscv-collab/riscv-gnu-toolchain.git
