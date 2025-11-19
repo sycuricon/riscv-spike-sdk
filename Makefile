@@ -28,9 +28,15 @@ freebsd_wrkdir := $(wrkdir)/freebsd
 freebsd_wrkdir_legacy := $(freebsd_wrkdir)/$(freebsd_srcdir)/riscv.riscv64/tmp/legacy
 freebsd_rootfs := $(topdir)/rootfs/freebsd_sysroot
 freebsd_rootfs_img := $(freebsd_rootfs).img
+freebsd_kernel_full := $(freebsd_wrkdir)/$(freebsd_srcdir)/riscv.riscv64/sys/QEMU/kernel.full
 freebsd_kernel := $(freebsd_rootfs)/boot/kernel/kernel
 freebsd_bench := $(freebsd_rootfs)/opt
 freebsd_usr_local := $(freebsd_rootfs)/usr/local
+
+freebsd_world_done := $(freebsd_wrkdir)/.buildworld.done
+freebsd_distribution_done := $(freebsd_rootfs)/.distribution.done
+freebsd_world_metalog := $(freebsd_rootfs)/METALOG.world
+freebsd_kernel_metalog := $(freebsd_rootfs)/METALOG.kernel
 
 lmbench_srcdir := $(benchdir)/lmbench
 unixbench_srcdir := $(benchdir)/unixbench/UnixBench
@@ -74,22 +80,23 @@ openocd := $(toolchain_dest)/bin/openocd
 
 gmp_srcdir := $(srcdir)/cross/gmp
 gmp_wrkdir := $(wrkdir)/gmp
-gmp_lib := $(freebsd_usr_local)/lib/libgmp.a
+gmp_lib := $(freebsd_usr_local)/lib/libgmp.so
 
 mpfr_srcdir := $(srcdir)/cross/mpfr
 mpfr_wrkdir := $(wrkdir)/mpfr
-mpfr_lib := $(freebsd_usr_local)/lib/libmpfr.a
+mpfr_lib := $(freebsd_usr_local)/lib/libmpfr.so
 
 gdb_srcdir := $(srcdir)/gdb
 gdb_native_wrkdir := $(wrkdir)/gdb-native
 gdb_cross_wrkdir := $(wrkdir)/gdb-cross
 gdb_native := $(toolchain_dest)/bin/gdb
+gdb_cross := $(freebsd_usr_local)/bin/gdb
 
 .PHONY: all
 all: $(vmlinux)
 
 .PHONY: llvm
-$(toolchain_dest)/bin/clang: $(llvm_srcdir)
+llvm $(toolchain_dest)/bin/clang: $(llvm_srcdir)
 	mkdir -p $(llvm_wrkdir) $(toolchain_dest)
 	cd $(llvm_wrkdir); $(CMAKE) -G Ninja -DLLVM_ENABLE_PROJECTS="clang;lld" \ \
 		-DCMAKE_BUILD_TYPE:String=$(LLVM_VERSION)  -DLLVM_ENABLE_ASSERTIONS=True \
@@ -102,7 +109,6 @@ $(toolchain_dest)/bin/clang: $(llvm_srcdir)
 		$(llvm_srcdir)/llvm
 	free -h
 	$(CMAKE) --build $(llvm_wrkdir) --target install
-llvm: $(toolchain_dest)/bin/clang
 
 FREEBSD_ENV := MAKEOBJDIRPREFIX=$(freebsd_wrkdir) \
 	X_COMPILER_TYPE=clang \
@@ -156,40 +162,48 @@ FREEBSD_ARGS := $(FREEBSD_TARGET) \
 	$(FREEBSD_TOOL) \
 	$(FREEBSD_OPT) -s -de
 
-buildworld: $(freebsd_srcdir) $(toolchain_dest)/bin/clang
+.PHONY: buildworld buildkernel installworld installkernel distribution freebsd-all
+buildworld $(freebsd_world_done): $(freebsd_srcdir) $(toolchain_dest)/bin/clang
 	mkdir -p $(freebsd_wrkdir)
+	rm -rf $(freebsd_world_done)
 	cd $(freebsd_srcdir) && env $(FREEBSD_ENV) \
 	nice $(freebsd_srcdir)/tools/build/make.py -j$(shell nproc) buildworld \
 		$(FREEBSD_ARGS)
+	touch -c $(freebsd_world_done)
 
-buildkernel: $(freebsd_wrkdir)
+buildkernel $(freebsd_kernel_full): $(freebsd_wrkdir) $(confdir)/QEMU $(toolchain_dest)/bin/clang
+	rm -rf $(freebsd_kernel_full)
 	cp $(confdir)/QEMU $(freebsd_srcdir)/sys/riscv/conf/QEMU
 	cd $(freebsd_srcdir) && env $(FREEBSD_ENV) \
 	nice $(freebsd_srcdir)/tools/build/make.py -j$(shell nproc) buildkernel \
 		'KERNCONF=QEMU' DEBUG=-g $(FREEBSD_ARGS)
 
-installworld: $(freebsd_wrkdir)
+installworld $(freebsd_world_metalog): $(freebsd_world_done)
 	rm -rf $(freebsd_rootfs)/METALOG.world
 	cd $(freebsd_srcdir) && env $(FREEBSD_ENV) \
 		DESTDIR=$(freebsd_rootfs) METALOG=$(freebsd_rootfs)/METALOG.world \
 	nice $(freebsd_srcdir)/tools/build/make.py -j$(shell nproc) installworld \
 		$(FREEBSD_ARGS) DESTDIR=$(freebsd_rootfs)
 
-installkernel: $(freebsd_wrkdir)
+installkernel $(freebsd_kernel_metalog): $(freebsd_kernel_full)
 	rm -rf $(freebsd_rootfs)/METALOG.kernel
 	cd $(freebsd_srcdir) && env $(FREEBSD_ENV) \
 		DESTDIR=$(freebsd_rootfs) METALOG=$(freebsd_rootfs)/METALOG.kernel \
 	nice $(freebsd_srcdir)/tools/build/make.py -j$(shell nproc) installkernel \
 		'KERNCONF=QEMU' DEBUG=-g $(FREEBSD_ARGS) DESTDIR=$(freebsd_rootfs)
 
-distribution: $(freebsd_wrkdir)
+distribution $(freebsd_distribution_done): $(freebsd_kernel_metalog) $(freebsd_world_metalog)
+	rm -rf $(freebsd_distribution_done)
 	cd $(freebsd_srcdir) && env $(FREEBSD_ENV) \
 		DESTDIR=$(freebsd_rootfs) METALOG=$(freebsd_rootfs)/METALOG.world \
 	nice $(freebsd_srcdir)/tools/build/make.py -j$(shell nproc) distribution \
 		$(FREEBSD_ARGS) DESTDIR=$(freebsd_rootfs)
+	touch -c $(freebsd_distribution_done)
+
+freebsd-all: buildworld buildkernel installworld installkernel distribution
 
 .PHONY: disk-image
-disk-image $(freebsd_rootfs_img) : $(freebsd_rootfs)
+disk-image $(freebsd_rootfs_img) : $(freebsd_distribution_done) $(freebsd_world_metalog) $(freebsd_kernel_metalog)
 	cp -r $(confdir)/freebsd_conf/* $(freebsd_rootfs)
 	python3 $(scriptdir)/get_mainfest.py $(freebsd_rootfs) $(freebsd_wrkdir)/METALOG.custom
 	cd $(freebsd_rootfs) && $(freebsd_wrkdir_legacy)/bin/makefs -t ffs \
@@ -275,7 +289,7 @@ gmp-cross $(gmp_lib): $(gmp_srcdir)
 	cd $(gmp_wrkdir) && $(MAKE) install
 
 .PHONY: mpfr-cross
-mpfr-cross: $(mpfr_srcdir)
+mpfr-cross $(mpfr_lib): $(mpfr_srcdir)
 	mkdir -p $(mpfr_wrkdir)
 	cd $(mpfr_srcdir) && ./autogen.sh
 	cd $(mpfr_wrkdir) && $</configure \
@@ -290,7 +304,7 @@ mpfr-cross: $(mpfr_srcdir)
 GDB_LLVM_CROSS_CFLAGS_NOWARN := $(LLVM_CROSS_CFLAGS_NOWARN) -O2 -fcommon -DRL_NO_COMPAT -DLIBICONV_PLUG
 
 .PHONY: gdb-cross
-gdb-cross: $(gdb_srcdir) $(gmp_lib) $(mpfr_lib)
+gdb-cross $(gdb_cross): $(gdb_srcdir) $(gmp_lib) $(mpfr_lib)
 	mkdir -p $(gdb_cross_wrkdir)
 	cd $(gdb_cross_wrkdir) && $</configure \
 		--with-gmp=$(freebsd_usr_local) \
