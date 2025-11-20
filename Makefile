@@ -37,7 +37,7 @@ freebsd_bench := $(freebsd_rootfs)/opt
 freebsd_usr_local := $(freebsd_rootfs)/usr/local
 
 freebsd_world_done := $(freebsd_wrkdir)/.buildworld.done
-freebsd_distribution_done := $(freebsd_rootfs)/.distribution.done
+freebsd_distribution_done := $(freebsd_wrkdir)/.distribution.done
 freebsd_world_metalog := $(freebsd_rootfs)/METALOG.world
 freebsd_kernel_metalog := $(freebsd_rootfs)/METALOG.kernel
 
@@ -169,7 +169,7 @@ buildworld $(freebsd_world_done): $(freebsd_srcdir) $(toolchain_dest)/bin/clang
 	cd $(freebsd_srcdir) && env $(FREEBSD_ENV) \
 	nice $(freebsd_srcdir)/tools/build/make.py -j$(shell nproc) buildworld \
 		$(FREEBSD_ARGS)
-	touch -c $(freebsd_world_done)
+	touch $(freebsd_world_done)
 
 buildkernel $(freebsd_kernel_full): $(freebsd_wrkdir) $(confdir)/QEMU $(toolchain_dest)/bin/clang
 	rm -rf $(freebsd_kernel_full)
@@ -198,7 +198,7 @@ distribution $(freebsd_distribution_done): $(freebsd_kernel_metalog) $(freebsd_w
 		DESTDIR=$(freebsd_rootfs) METALOG=$(freebsd_rootfs)/METALOG.world \
 	nice $(freebsd_srcdir)/tools/build/make.py -j$(shell nproc) distribution \
 		$(FREEBSD_ARGS) DESTDIR=$(freebsd_rootfs)
-	touch -c $(freebsd_distribution_done)
+	touch $(freebsd_distribution_done)
 
 freebsd-all: buildworld buildkernel installworld installkernel distribution
 
@@ -442,13 +442,15 @@ $(pk): $(pk_srcdir) $(RISCV)/bin/$(target_newlib)-gcc
 OPENSBI_EXTRA_ARGS :=
 ifeq ($(MODE),LLVM)
 	OPENSBI_EXTRA_ARGS += LLVM=$(toolchain_dest)/bin/
+else
+	OPENSBI_EXTRA_ARGS += FW_PAYLOAD_PATH=$(linux_image)
 endif
 
-$(fw_jump): $(opensbi_srcdir) $(linux_image)
+$(fw_jump): $(opensbi_srcdir)
 	rm -rf $(opensbi_wrkdir)
 	mkdir -p $(opensbi_wrkdir)
 	$(MAKE) -C $(opensbi_srcdir) FW_TEXT_START=0x80000000 \
-		FW_PAYLOAD_PATH=$(linux_image) PLATFORM=generic O=$(opensbi_wrkdir) CROSS_COMPILE=riscv64-unknown-linux-gnu- \
+		PLATFORM=generic O=$(opensbi_wrkdir) CROSS_COMPILE=riscv64-unknown-linux-gnu- \
 		$(OPENSBI_EXTRA_ARGS)
 
 .PHONY: spike
