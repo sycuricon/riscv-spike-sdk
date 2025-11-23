@@ -22,12 +22,12 @@ This SDK follows the newest Linux Kernel, GNU toolchain and Spike, the functions
 |         conf        |     config for SDK     |             |
 
 ## Quickstart
-Build dependencies on Ubuntu 18.04/20.04:
+Build dependencies on Ubuntu 24.04:
 ```bash
 $ sudo apt-get install device-tree-compiler autoconf automake autotools-dev    \
 curl libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo \
-gperf libtool patchutils bc zlib1g-dev libexpat-dev python-dev python3-dev unzip \
-libglib2.0-dev libpixman-1-dev git rsync wget cpio
+gperf libtool patchutils bc zlib1g-dev libexpat-dev python3-dev unzip \
+libglib2.0-dev libpixman-1-dev git rsync wget cpio libssl-dev
 ```
 ```bash
 git clone https://github.com/riscv-zju/riscv-rss-sdk.git
