@@ -22,7 +22,7 @@ This SDK follows the newest Linux Kernel, GNU toolchain and Spike, the functions
 | repo/riscv-openocd  | JTAG Debugger |    master   |
 |         conf        |     config for SDK     |             |
 
-Build outputs are placed in `build/` (toolchain, kernel, bootloader and simulator objects), `toolchain/` (installed toolchain, spike, qemu, openocd) and `rootfs/` (buildroot output and the initramfs sysroot).
+Build outputs are placed in `build/` (toolchain, buildroot, kernel, bootloader and simulator objects), `toolchain/` (installed toolchain, spike, qemu, openocd) and `rootfs/` (the root filesystem packed into the kernel as initramfs).
 
 ## Quickstart
 Build dependencies on Ubuntu 24.04/26.04:
@@ -40,10 +40,7 @@ sh quickstart.sh
 # For people who want to develop the whole system
 git submodule update --init --recursive --progress
 
-#	NOTICE: 
-# 		If you already have a riscv toolchain, please notice ** DO NOT SET
-#		 $RISCV and MAKE SURE NO ORIGIN RISCV TOOLCHAIN IN YOUR $PATH **
-make          # build toolchain, rootfs and vmlinux
+make          # build Linux and newlib toolchains, rootfs and vmlinux
 make spike    # build bootloader and spike, then boot Linux on spike
 ```
 
@@ -51,23 +48,27 @@ Common make targets:
 
 | Target | Description |
 | :----: | :---------- |
-| `make` / `make vmlinux` | Build Linux toolchain, buildroot rootfs and the kernel |
+| `make` | Build both toolchains, buildroot rootfs and the kernel |
+| `make vmlinux` | Build Linux toolchain, buildroot rootfs and the kernel only |
 | `make spike` | Boot Linux on spike (bootloader selected by `BL`) |
 | `make qemu` / `make qemu-debug` | Boot Linux on QEMU, `qemu-debug` waits for gdb on port 1234 |
-| `make newlib` | Build the newlib (bare-metal) cross-compiler |
+| `make linux` | Build the Linux (glibc) cross-compiler only |
+| `make pk` | Build pk, run bare-metal programs with `spike pk <program>` |
+| `make bbl` | Build bbl with the kernel as payload |
+| `make newlib` | Build the newlib (bare-metal, multilib) cross-compiler only |
 | `make buildroot-menuconfig` | Configure buildroot, saved back to `conf/buildroot_initramfs_config` |
 | `make linux-menuconfig` | Configure the kernel in `build/linux/.config` |
 | `make openocd` | Build openocd for JTAG debugging |
 | `make clean` | Remove `build/` |
-| `make mrproper` | Remove `build/`, `toolchain/` and `rootfs/`, including files you added to the sysroot |
+| `make mrproper` | Remove `build/`, `toolchain/` and `rootfs/`, including files you added to `rootfs/` |
 
 Common variables: `BL` (`bbl` or `opensbi`, default `bbl`), `ISA` (default `rv64imafdc_zifencei_zicsr`), `ABI` (default `lp64d`), `BOARD` (`spike` or `starship`, selects `conf/<BOARD>.dts`).
 
 ## Software Development
 
-The default process will only build Linux cross-compiler, which has prefix "riscv64-unknown-linux-gnu", if you want using newlib, you can use `make newlib` to build, then you can use pk as a kernel to run your program.
+The default process builds two cross-compilers into `toolchain/`: the Linux cross-compiler with prefix "riscv64-unknown-linux-gnu", and the newlib (bare-metal, multilib) cross-compiler with prefix "riscv64-unknown-elf".
 
-To add your test program, copy your elfs into `rootfs/buildroot_initramfs_sysroot`, then run `touch rootfs/buildroot_initramfs_sysroot && make` so the kernel repacks the initramfs.
+To add your test program, copy your elfs into `rootfs/` and run `make` again; added, changed or removed files are detected and the kernel repacks the initramfs.
 
 **NOTICE**: The test program should use Linux cross-compiler to compile , instead of Newlib cross-compiler.
 
@@ -83,7 +84,7 @@ Same to linux, if you want to add driver for new devices, `make linux-menuconfig
 
 2.  Build rootfs
 
-	Using `buildroot` to help you to build a rootfs, you can add config in `conf/buildroot_initramfs_config` to add package, and you can copy your pre-compiled elf to `rootfs/buildroot_initramfs_sysroot` to access in Spike.
+	Using `buildroot` to help you to build a rootfs, you can add config in `conf/buildroot_initramfs_config` to add package, and you can copy your pre-compiled elf to `rootfs/` to access in Spike. The buildroot output itself is in `build/buildroot`.
 	And remember, the basic idea of this SDK is to deconfig all the device, because spike is very limited support for devices, specically the Ethernet, so you should not open DHCP.
 
 3. Compile Linux

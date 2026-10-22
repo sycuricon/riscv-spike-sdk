@@ -1,7 +1,3 @@
-# RISCV should either be unset, or set to point to a directory that contains
-# a toolchain install tree that was built via other means.
-RISCV ?= $(CURDIR)/toolchain
-PATH := $(RISCV)/bin:$(PATH)
 ISA ?= rv64imafdc_zifencei_zicsr
 ABI ?= lp64d
 BL ?= bbl
@@ -15,15 +11,18 @@ wrkdir := $(CURDIR)/build
 
 toolchain_srcdir := $(srcdir)/riscv-gnu-toolchain
 toolchain_wrkdir := $(wrkdir)/riscv-gnu-toolchain
-toolchain_dest := $(CURDIR)/toolchain
+toolchain_newlib_wrkdir := $(wrkdir)/riscv-gnu-toolchain-newlib
+
+export SDK_TOOLCHAIN_DIR := $(CURDIR)/toolchain
+PATH := $(SDK_TOOLCHAIN_DIR)/bin:$(PATH)
 toolchain_headers := $(toolchain_wrkdir)/linux-headers
 
 buildroot_srcdir := $(srcdir)/buildroot
-buildroot_initramfs_wrkdir := $(topdir)/rootfs/buildroot_initramfs
+buildroot_initramfs_wrkdir := $(wrkdir)/buildroot
 buildroot_initramfs_tar := $(buildroot_initramfs_wrkdir)/images/rootfs.tar
 buildroot_initramfs_config := $(confdir)/buildroot_initramfs_config
 buildroot_initramfs_sysroot_stamp := $(wrkdir)/.buildroot_initramfs_sysroot
-buildroot_initramfs_sysroot := $(topdir)/rootfs/buildroot_initramfs_sysroot
+buildroot_initramfs_sysroot := $(topdir)/rootfs
 
 linux_srcdir := $(srcdir)/linux
 linux_wrkdir := $(wrkdir)/linux
@@ -33,11 +32,14 @@ vmlinux := $(linux_wrkdir)/vmlinux
 vmlinux_stripped := $(linux_wrkdir)/vmlinux-stripped
 linux_image := $(linux_wrkdir)/arch/riscv/boot/Image
 
+rootfs_changes := $(shell find $(buildroot_initramfs_sysroot) -newer $(vmlinux) \( -type f -o -type d \) 2>/dev/null)
+
 DTS ?= $(abspath conf/$(BOARD).dts)
 pk_srcdir := $(srcdir)/riscv-pk
 pk_wrkdir := $(wrkdir)/riscv-pk
 bbl := $(pk_wrkdir)/bbl
 pk  := $(pk_wrkdir)/pk
+pk_config := $(pk_wrkdir)/Makefile
 
 opensbi_srcdir := $(srcdir)/opensbi
 opensbi_wrkdir := $(wrkdir)/opensbi
@@ -45,103 +47,99 @@ fw_jump := $(opensbi_wrkdir)/platform/generic/firmware/fw_jump.elf
 
 spike_srcdir := $(srcdir)/riscv-isa-sim
 spike_wrkdir := $(wrkdir)/riscv-isa-sim
-spike := $(toolchain_dest)/bin/spike
+spike := $(SDK_TOOLCHAIN_DIR)/bin/spike
 
 qemu_srcdir := $(srcdir)/riscv-gnu-toolchain/qemu
 qemu_wrkdir := $(wrkdir)/qemu
-qemu :=  $(toolchain_dest)/bin/qemu-system-riscv64
+qemu :=  $(SDK_TOOLCHAIN_DIR)/bin/qemu-system-riscv64
 
 openocd_srcdir := $(srcdir)/riscv-openocd
 openocd_wrkdir := $(wrkdir)/riscv-openocd
-openocd := $(toolchain_dest)/bin/openocd
+openocd := $(SDK_TOOLCHAIN_DIR)/bin/openocd
 
 target_linux  := riscv64-unknown-linux-gnu
 target_newlib := riscv64-unknown-elf
+cross_linux   := $(SDK_TOOLCHAIN_DIR)/bin/$(target_linux)-
+linux_gcc     := $(cross_linux)gcc
+newlib_gcc    := $(SDK_TOOLCHAIN_DIR)/bin/$(target_newlib)-gcc
 
 .PHONY: all
-all: $(vmlinux)
+all: $(vmlinux) newlib
 
-newlib: $(RISCV)/bin/$(target_newlib)-gcc
+linux: $(linux_gcc)
+newlib: $(newlib_gcc)
 
-
-ifneq ($(RISCV),$(toolchain_dest))
-$(RISCV)/bin/$(target_linux)-gcc:
-	$(error The RISCV environment variable was set, but is not pointing at a toolchain install tree)
-endif
-
-$(toolchain_dest)/bin/$(target_linux)-gcc:
+$(linux_gcc):
 	mkdir -p $(toolchain_wrkdir)
 	$(MAKE) -C $(linux_srcdir) O=$(toolchain_wrkdir)/linux ARCH=riscv INSTALL_HDR_PATH=$(toolchain_headers) headers_install
 	cd $(toolchain_wrkdir); $(toolchain_srcdir)/configure \
-		--prefix=$(toolchain_dest) \
+		--prefix=$(SDK_TOOLCHAIN_DIR) \
 		--with-arch=$(ISA) \
 		--with-abi=$(ABI) \
 		--with-linux-headers-src=$(toolchain_headers)/include
 	$(MAKE) -C $(toolchain_wrkdir) linux
 
-$(toolchain_dest)/bin/$(target_newlib)-gcc:
-	mkdir -p $(toolchain_wrkdir)
-	cd $(toolchain_wrkdir); $(toolchain_srcdir)/configure \
-		--prefix=$(toolchain_dest) \
+$(newlib_gcc): | $(linux_gcc)
+	mkdir -p $(toolchain_newlib_wrkdir)
+	cd $(toolchain_newlib_wrkdir); $(toolchain_srcdir)/configure \
+		--prefix=$(SDK_TOOLCHAIN_DIR) \
 		--enable-multilib
-	$(MAKE) -C $(toolchain_wrkdir) 
+	$(MAKE) -C $(toolchain_newlib_wrkdir) newlib
 
-# Regenerate .config whenever the SDK config or the toolchain changes.
-# NOTE: switching the toolchain itself requires a clean buildroot build:
-#   rm -rf $(buildroot_initramfs_wrkdir) $(buildroot_initramfs_sysroot)
-$(buildroot_initramfs_wrkdir)/.config: $(buildroot_initramfs_config) $(buildroot_srcdir) $(RISCV)/bin/$(target_linux)-gcc
+$(buildroot_initramfs_wrkdir)/.config: $(buildroot_initramfs_config) $(buildroot_srcdir) $(linux_gcc)
 	mkdir -p $(dir $@)
 	cp $(buildroot_initramfs_config) $@
-	$(MAKE) -C $(buildroot_srcdir) RISCV=$(RISCV) PATH="$(PATH)" O=$(buildroot_initramfs_wrkdir) olddefconfig
+	$(MAKE) -C $(buildroot_srcdir) O=$(buildroot_initramfs_wrkdir) olddefconfig
 
-$(buildroot_initramfs_tar): $(buildroot_srcdir) $(buildroot_initramfs_wrkdir)/.config $(RISCV)/bin/$(target_linux)-gcc
-	$(MAKE) -C $< RISCV=$(RISCV) PATH="$(PATH)" O=$(buildroot_initramfs_wrkdir)
+$(buildroot_initramfs_tar): $(buildroot_srcdir) $(buildroot_initramfs_wrkdir)/.config $(linux_gcc)
+	$(MAKE) -C $< O=$(buildroot_initramfs_wrkdir)
 
 .PHONY: buildroot-menuconfig
 buildroot-menuconfig: $(buildroot_initramfs_wrkdir)/.config
-	$(MAKE) -C $(buildroot_srcdir) RISCV=$(RISCV) PATH="$(PATH)" O=$(buildroot_initramfs_wrkdir) menuconfig
-	$(MAKE) -C $(buildroot_srcdir) RISCV=$(RISCV) PATH="$(PATH)" O=$(buildroot_initramfs_wrkdir) BR2_DEFCONFIG=$(buildroot_initramfs_config) savedefconfig
+	$(MAKE) -C $(buildroot_srcdir) O=$(buildroot_initramfs_wrkdir) menuconfig
+	$(MAKE) -C $(buildroot_srcdir) O=$(buildroot_initramfs_wrkdir) BR2_DEFCONFIG=$(buildroot_initramfs_config) savedefconfig
 	touch $<
 
-$(buildroot_initramfs_sysroot): $(buildroot_initramfs_tar)
+$(buildroot_initramfs_sysroot_stamp): $(buildroot_initramfs_tar)
 	mkdir -p $(buildroot_initramfs_sysroot)
-	tar -xpf $< -C $(buildroot_initramfs_sysroot) --exclude ./dev --exclude ./usr/share/locale
+	tar -xpmf $< -C $(buildroot_initramfs_sysroot) --exclude ./dev --exclude ./usr/share/locale
+	touch $@
 
-$(linux_wrkdir)/.config: $(linux_defconfig) $(linux_srcdir) $(toolchain_dest)/bin/$(target_linux)-gcc
+$(linux_wrkdir)/.config: $(linux_defconfig) $(linux_srcdir) $(linux_gcc)
 	mkdir -p $(dir $@)
 	cp -p $< $@
-	$(MAKE) -C $(linux_srcdir) O=$(linux_wrkdir) ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- olddefconfig
+	$(MAKE) -C $(linux_srcdir) O=$(linux_wrkdir) ARCH=riscv CROSS_COMPILE=$(cross_linux) olddefconfig
 ifeq (,$(filter rv%c,$(ISA)))
 	sed 's/^.*CONFIG_RISCV_ISA_C.*$$/CONFIG_RISCV_ISA_C=n/' -i $@
-	$(MAKE) -C $(linux_srcdir) O=$(linux_wrkdir) ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- olddefconfig
+	$(MAKE) -C $(linux_srcdir) O=$(linux_wrkdir) ARCH=riscv CROSS_COMPILE=$(cross_linux) olddefconfig
 endif
 ifeq ($(ISA),$(filter rv32%,$(ISA)))
 	sed 's/^.*CONFIG_ARCH_RV32I.*$$/CONFIG_ARCH_RV32I=y/' -i $@
 	sed 's/^.*CONFIG_ARCH_RV64I.*$$/CONFIG_ARCH_RV64I=n/' -i $@
-	$(MAKE) -C $(linux_srcdir) O=$(linux_wrkdir) ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- olddefconfig
+	$(MAKE) -C $(linux_srcdir) O=$(linux_wrkdir) ARCH=riscv CROSS_COMPILE=$(cross_linux) olddefconfig
 endif
 
-$(vmlinux): $(linux_srcdir) $(linux_wrkdir)/.config $(buildroot_initramfs_sysroot) 
+$(vmlinux): $(linux_srcdir) $(linux_wrkdir)/.config $(buildroot_initramfs_sysroot_stamp) $(rootfs_changes)
 	$(MAKE) -C $< O=$(linux_wrkdir) \
 		CONFIG_INITRAMFS_SOURCE="$(confdir)/initramfs.txt $(buildroot_initramfs_sysroot)" \
 		CONFIG_INITRAMFS_ROOT_UID=$(shell id -u) \
 		CONFIG_INITRAMFS_ROOT_GID=$(shell id -g) \
-		CROSS_COMPILE=riscv64-unknown-linux-gnu- \
+		CROSS_COMPILE=$(cross_linux) \
 		ARCH=riscv \
 		all
 
 $(vmlinux_stripped): $(vmlinux)
-	$(target_linux)-strip -o $@ $<
+	$(cross_linux)strip -o $@ $<
 
 $(linux_image): $(vmlinux)
 
 .PHONY: linux-menuconfig
 linux-menuconfig: $(linux_wrkdir)/.config
-	$(MAKE) -C $(linux_srcdir) O=$(dir $<) ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- menuconfig
-	$(MAKE) -C $(linux_srcdir) O=$(dir $<) ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- savedefconfig
+	$(MAKE) -C $(linux_srcdir) O=$(dir $<) ARCH=riscv CROSS_COMPILE=$(cross_linux) menuconfig
+	$(MAKE) -C $(linux_srcdir) O=$(dir $<) ARCH=riscv CROSS_COMPILE=$(cross_linux) savedefconfig
 	# cp $(dir $<)/defconfig conf/linux_defconfig
 
-$(bbl): $(pk_srcdir) $(vmlinux_stripped) $(DTS)
+$(pk_config): $(pk_srcdir) $(DTS) $(linux_gcc)
 	rm -rf $(pk_wrkdir)
 	mkdir -p $(pk_wrkdir)
 	cd $(pk_wrkdir) && $</configure \
@@ -150,29 +148,26 @@ $(bbl): $(pk_srcdir) $(vmlinux_stripped) $(DTS)
 		--enable-logo \
 		--with-logo=$(abspath conf/logo.txt) \
 		--with-dts=$(DTS)
-	CFLAGS="-mabi=$(ABI) -march=$(ISA)" $(MAKE) -C $(pk_wrkdir)
 
+$(pk): $(pk_config)
+	CFLAGS="-mabi=$(ABI) -march=$(ISA)" $(MAKE) -C $(pk_wrkdir) pk
+	$(MAKE) -C $(pk_wrkdir) install-exes install_exes=pk INSTALLDIR=$(SDK_TOOLCHAIN_DIR)
 
-$(pk): $(pk_srcdir) $(RISCV)/bin/$(target_newlib)-gcc
-	rm -rf $(pk_wrkdir)
-	mkdir -p $(pk_wrkdir)
-	cd $(pk_wrkdir) && $</configure \
-		--host=$(target_newlib) \
-		--prefix=$(abspath $(toolchain_dest))
-	CFLAGS="-mabi=$(ABI) -march=$(ISA)" $(MAKE) -C $(pk_wrkdir)
-	$(MAKE) -C $(pk_wrkdir) install
+$(bbl): $(pk_config) $(vmlinux_stripped) | $(pk)
+	CFLAGS="-mabi=$(ABI) -march=$(ISA)" $(MAKE) -C $(pk_wrkdir) bbl bbl.bin
 
-$(fw_jump): $(opensbi_srcdir) $(linux_image) $(RISCV)/bin/$(target_linux)-gcc
+$(fw_jump): $(opensbi_srcdir) $(linux_image) $(linux_gcc)
 	rm -rf $(opensbi_wrkdir)
 	mkdir -p $(opensbi_wrkdir)
-	$(MAKE) -C $(opensbi_srcdir) FW_TEXT_START=0x80000000 FW_PAYLOAD_PATH=$(linux_image) PLATFORM=generic O=$(opensbi_wrkdir) CROSS_COMPILE=riscv64-unknown-linux-gnu-
+	$(MAKE) -C $(opensbi_srcdir) FW_TEXT_START=0x80000000 FW_PAYLOAD_PATH=$(linux_image) PLATFORM=generic O=$(opensbi_wrkdir) CROSS_COMPILE=$(cross_linux)
 
 $(spike): $(spike_srcdir) 
 	rm -rf $(spike_wrkdir)
 	mkdir -p $(spike_wrkdir)
 	mkdir -p $(dir $@)
 	cd $(spike_wrkdir) && $</configure \
-		--prefix=$(dir $(abspath $(dir $@))) 
+		--with-target= \
+		--prefix=$(dir $(abspath $(dir $@)))
 	$(MAKE) -C $(spike_wrkdir)
 	$(MAKE) -C $(spike_wrkdir) install
 	touch -c $@
@@ -202,10 +197,11 @@ $(openocd): $(openocd_srcdir)
 	touch -c $@
 
 
-.PHONY: newlib buildroot_initramfs_sysroot vmlinux bbl fw_image openocd
-buildroot_initramfs_sysroot: $(buildroot_initramfs_sysroot)
+.PHONY: linux newlib buildroot_initramfs_sysroot vmlinux bbl pk fw_image openocd
+buildroot_initramfs_sysroot: $(buildroot_initramfs_sysroot_stamp)
 vmlinux: $(vmlinux)
 bbl: $(bbl)
+pk: $(pk)
 fw_image: $(fw_jump)
 openocd: $(openocd)
 
@@ -214,7 +210,7 @@ clean:
 	rm -rf -- $(wrkdir)
 
 mrproper:
-	rm -rf -- $(wrkdir) $(toolchain_dest) $(topdir)/rootfs
+	rm -rf -- $(wrkdir) $(SDK_TOOLCHAIN_DIR) $(topdir)/rootfs
 
 .PHONY: spike qemu qemu-debug
 
