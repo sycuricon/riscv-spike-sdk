@@ -51,13 +51,13 @@ Common make targets:
 | `make` | Build both toolchains, buildroot rootfs and the kernel |
 | `make vmlinux` | Build Linux toolchain, buildroot rootfs and the kernel only |
 | `make spike` | Boot Linux on spike (bootloader selected by `BL`) |
-| `make qemu` / `make qemu-debug` | Boot Linux on QEMU, `qemu-debug` waits for gdb on port 1234 |
-| `make linux` | Build the Linux (glibc) cross-compiler only |
+| `make qemu` / `make qemu_debug` | Boot Linux on QEMU, `qemu_debug` waits for gdb on port 1234 |
+| `make toolchain_linux` | Build the Linux (glibc) cross-compiler only |
 | `make pk` | Build pk, run bare-metal programs with `spike pk <program>` |
 | `make bbl` | Build bbl with the kernel as payload |
-| `make newlib` | Build the newlib (bare-metal, multilib) cross-compiler only |
-| `make buildroot-menuconfig` | Configure buildroot, saved back to `conf/buildroot_initramfs_config` |
-| `make linux-menuconfig` | Configure the kernel in `build/linux/.config` |
+| `make toolchain_newlib` | Build the newlib (bare-metal, multilib) cross-compiler only |
+| `make buildroot_menuconfig` | Configure buildroot, saved back to `conf/buildroot_initramfs_config` |
+| `make linux_menuconfig` | Configure the kernel in `build/linux/.config` |
 | `make openocd` | Build openocd for JTAG debugging |
 | `make clean` | Remove `build/` |
 | `make mrproper` | Remove `build/`, `toolchain/` and `rootfs/`, including files you added to `rootfs/` |
@@ -72,9 +72,9 @@ To add your test program, copy your elfs into `rootfs/` and run `make` again; ad
 
 **NOTICE**: The test program should use Linux cross-compiler to compile , instead of Newlib cross-compiler.
 
-If the benchmark you choose need some package, you can use `make buildroot-menuconfig` to reconfigure buildroot (the change is saved back to `conf/buildroot_initramfs_config`) and `make` to rebuild. 
+If the benchmark you choose need some package, you can use `make buildroot_menuconfig` to reconfigure buildroot (the change is saved back to `conf/buildroot_initramfs_config`) and `make` to rebuild. 
 
-Same to linux, if you want to add driver for new devices, `make linux-menuconfig` to reconfigure and `make` to rebuild. The change only lives in `build/linux/.config`; a minimal defconfig is written to `build/linux/defconfig`, copy it to `conf/linux_defconfig` if you want to keep it. Editing `conf/linux_defconfig` regenerates `build/linux/.config` and drops changes made only in menuconfig.
+Same to linux, if you want to add driver for new devices, `make linux_menuconfig` to reconfigure and `make` to rebuild. The change only lives in `build/linux/.config`; a minimal defconfig is written to `build/linux/defconfig`, copy it to `conf/linux_defconfig` if you want to keep it. Editing `conf/linux_defconfig` regenerates `build/linux/.config` and drops changes made only in menuconfig.
 
 ## If you want to build step by step ...
 
