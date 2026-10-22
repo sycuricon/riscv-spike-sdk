@@ -16,6 +16,7 @@ wrkdir := $(CURDIR)/build
 toolchain_srcdir := $(srcdir)/riscv-gnu-toolchain
 toolchain_wrkdir := $(wrkdir)/riscv-gnu-toolchain
 toolchain_dest := $(CURDIR)/toolchain
+toolchain_headers := $(toolchain_wrkdir)/linux-headers
 
 buildroot_srcdir := $(srcdir)/buildroot
 buildroot_initramfs_wrkdir := $(topdir)/rootfs/buildroot_initramfs
@@ -70,13 +71,13 @@ endif
 
 $(toolchain_dest)/bin/$(target_linux)-gcc:
 	mkdir -p $(toolchain_wrkdir)
-	$(MAKE) -C $(linux_srcdir) O=$(toolchain_wrkdir) ARCH=riscv INSTALL_HDR_PATH=$(abspath $(toolchain_srcdir)/linux-headers) headers_install
+	$(MAKE) -C $(linux_srcdir) O=$(toolchain_wrkdir)/linux ARCH=riscv INSTALL_HDR_PATH=$(toolchain_headers) headers_install
 	cd $(toolchain_wrkdir); $(toolchain_srcdir)/configure \
 		--prefix=$(toolchain_dest) \
 		--with-arch=$(ISA) \
-		--with-abi=$(ABI) 
+		--with-abi=$(ABI) \
+		--with-linux-headers-src=$(toolchain_headers)/include
 	$(MAKE) -C $(toolchain_wrkdir) linux
-	# sed 's/^#define LINUX_VERSION_CODE.*/#define LINUX_VERSION_CODE 329226/' -i $(toolchain_dest)/sysroot/usr/include/linux/version.h
 
 $(toolchain_dest)/bin/$(target_newlib)-gcc:
 	mkdir -p $(toolchain_wrkdir)
@@ -85,20 +86,22 @@ $(toolchain_dest)/bin/$(target_newlib)-gcc:
 		--enable-multilib
 	$(MAKE) -C $(toolchain_wrkdir) 
 
-$(buildroot_initramfs_wrkdir)/.config: $(buildroot_srcdir)
-	rm -rf $(dir $@)
+# Regenerate .config whenever the SDK config or the toolchain changes.
+# NOTE: switching the toolchain itself requires a clean buildroot build:
+#   rm -rf $(buildroot_initramfs_wrkdir) $(buildroot_initramfs_sysroot)
+$(buildroot_initramfs_wrkdir)/.config: $(buildroot_initramfs_config) $(buildroot_srcdir) $(RISCV)/bin/$(target_linux)-gcc
 	mkdir -p $(dir $@)
 	cp $(buildroot_initramfs_config) $@
-	$(MAKE) -C $< RISCV=$(RISCV) PATH="$(PATH)" O=$(buildroot_initramfs_wrkdir) olddefconfig CROSS_COMPILE=riscv64-unknown-linux-gnu-
+	$(MAKE) -C $(buildroot_srcdir) RISCV=$(RISCV) PATH="$(PATH)" O=$(buildroot_initramfs_wrkdir) olddefconfig
 
-$(buildroot_initramfs_tar): $(buildroot_srcdir) $(buildroot_initramfs_wrkdir)/.config $(RISCV)/bin/$(target_linux)-gcc $(buildroot_initramfs_config)
+$(buildroot_initramfs_tar): $(buildroot_srcdir) $(buildroot_initramfs_wrkdir)/.config $(RISCV)/bin/$(target_linux)-gcc
 	$(MAKE) -C $< RISCV=$(RISCV) PATH="$(PATH)" O=$(buildroot_initramfs_wrkdir)
 
-.PHONY: buildroot_initramfs-menuconfig
-buildroot-menuconfig: $(buildroot_initramfs_wrkdir)/.config $(buildroot_srcdir)
-	$(MAKE) -C $(dir $<) O=$(buildroot_initramfs_wrkdir) menuconfig
-	$(MAKE) -C $(dir $<) O=$(buildroot_initramfs_wrkdir) savedefconfig
-	cp $(dir $<)/defconfig conf/buildroot_initramfs_config
+.PHONY: buildroot-menuconfig
+buildroot-menuconfig: $(buildroot_initramfs_wrkdir)/.config
+	$(MAKE) -C $(buildroot_srcdir) RISCV=$(RISCV) PATH="$(PATH)" O=$(buildroot_initramfs_wrkdir) menuconfig
+	$(MAKE) -C $(buildroot_srcdir) RISCV=$(RISCV) PATH="$(PATH)" O=$(buildroot_initramfs_wrkdir) BR2_DEFCONFIG=$(buildroot_initramfs_config) savedefconfig
+	touch $<
 
 $(buildroot_initramfs_sysroot): $(buildroot_initramfs_tar)
 	mkdir -p $(buildroot_initramfs_sysroot)
@@ -108,8 +111,6 @@ $(linux_wrkdir)/.config: $(linux_defconfig) $(linux_srcdir) $(toolchain_dest)/bi
 	mkdir -p $(dir $@)
 	cp -p $< $@
 	$(MAKE) -C $(linux_srcdir) O=$(linux_wrkdir) ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- olddefconfig
-	echo $(ISA)
-	echo $(filter rv32%,$(ISA))
 ifeq (,$(filter rv%c,$(ISA)))
 	sed 's/^.*CONFIG_RISCV_ISA_C.*$$/CONFIG_RISCV_ISA_C=n/' -i $@
 	$(MAKE) -C $(linux_srcdir) O=$(linux_wrkdir) ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- olddefconfig
@@ -201,7 +202,7 @@ $(openocd): $(openocd_srcdir)
 	touch -c $@
 
 
-.PHONY: buildroot_initramfs_sysroot vmlinux bbl fw_jump openocd
+.PHONY: newlib buildroot_initramfs_sysroot vmlinux bbl fw_image openocd
 buildroot_initramfs_sysroot: $(buildroot_initramfs_sysroot)
 vmlinux: $(vmlinux)
 bbl: $(bbl)
@@ -215,7 +216,7 @@ clean:
 mrproper:
 	rm -rf -- $(wrkdir) $(toolchain_dest) $(topdir)/rootfs
 
-.PHONY: spike qemu
+.PHONY: spike qemu qemu-debug
 
 ifeq ($(BL),opensbi)
 spike: $(fw_jump) $(spike)
