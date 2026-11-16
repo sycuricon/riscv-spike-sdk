@@ -109,6 +109,27 @@ class BuildChecks(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             build.verify()
 
+    def test_test_upgrade_only_accepts_known_added_files(self):
+        self.fixture()
+        path = build.WORK / "manifest.json"
+        state = json.loads(path.read_text())
+        for name in ("tests/pmp-virt/syscall-api.c", "build/virt-kvm/out/pv-syscall-api"):
+            del state["files"][name]
+        path.write_text(json.dumps(state))
+        with self.assertRaises(RuntimeError):
+            build.verify()
+        build.verify(allow_script_updates=True, allow_test_upgrade=True)
+        del state["files"]["build/virt-kvm/out/linux-host/arch/riscv/boot/Image"]
+        path.write_text(json.dumps(state))
+        with self.assertRaises(RuntimeError):
+            build.verify(allow_script_updates=True, allow_test_upgrade=True)
+
+    def test_test_upgrade_still_rejects_changed_kernel(self):
+        self.fixture()
+        (build.WORK / "out/linux-host/arch/riscv/boot/Image").write_bytes(b"changed")
+        with self.assertRaisesRegex(RuntimeError, "checksum mismatch"):
+            build.verify(allow_script_updates=True, allow_test_upgrade=True)
+
     def test_manifest_rejects_changed_image(self):
         self.fixture()
         (build.WORK / "out/linux-host/arch/riscv/boot/Image").write_bytes(b"wrong")

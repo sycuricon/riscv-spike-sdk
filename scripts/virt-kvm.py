@@ -25,7 +25,7 @@ DIRECT = {"linux-host", "opensbi", "qemu"}
 SCRIPT_INPUTS = ("scripts/virt-kvm.py", "scripts/run-virt-guest.sh",
                  "scripts/run-virt-debian.sh", "tests/pmp-virt/check-host.sh",
                  "tests/pmp-virt/check-guest.sh", "tests/pmp-virt/run-host-suite.sh",
-                 "tests/pmp-virt/guest-autorun.sh")
+                 "tests/pmp-virt/guest-autorun.sh", "tests/pmp-virt/syscall-api.c")
 DISABLED = ("MODULES", "JUMP_LABEL", "FUNCTION_TRACER", "FUNCTION_GRAPH_TRACER", "DYNAMIC_FTRACE", "FTRACE", "KPROBES", "LIVEPATCH", "BPF_JIT", "RANDOMIZE_BASE", "KEXEC", "KEXEC_FILE", "KGDB")
 
 
@@ -352,19 +352,23 @@ def build_firmware(cross, jobs):
 
 
 def append_archive(base, staging, destination):
+    # BusyBox cpio stops at the first TRAILER record. Extract the base archive,
+    # merge the overlay, then emit one cpio stream so overlay files are visible.
     with gzip.open(base, "rb") as stream:
-        while stream.read(1024 * 1024):
-            pass
-    listing = ["."] + ["./" + str(path.relative_to(staging)).replace(os.sep, "/")
-                       for path in sorted(staging.rglob("*"))]
-    archive = subprocess.run(["cpio", "--null", "-o", "-H", "newc", "--owner=0:0"],
-                             cwd=staging, input=("\0".join(listing) + "\0").encode(),
-                             stdout=subprocess.PIPE, check=True).stdout
+        base_archive = stream.read()
+    with tempfile.TemporaryDirectory(prefix="merge-", dir=WORK) as merged_name:
+        merged = Path(merged_name)
+        subprocess.run(["cpio", "-idm", "--no-absolute-filenames"], cwd=merged,
+                       input=base_archive, stdout=subprocess.DEVNULL, check=True)
+        shutil.copytree(staging, merged, dirs_exist_ok=True)
+        listing = ["."] + ["./" + str(path.relative_to(merged)).replace(os.sep, "/")
+                           for path in sorted(merged.rglob("*"))]
+        archive = subprocess.run(["cpio", "--null", "-o", "-H", "newc", "--owner=0:0"],
+                                 cwd=merged, input=("\0".join(listing) + "\0").encode(),
+                                 stdout=subprocess.PIPE, check=True).stdout
     destination = private_path(destination)
     temporary = destination.with_suffix(destination.suffix + ".tmp")
     with temporary.open("wb") as stream:
-        with Path(base).open("rb") as input_stream:
-            shutil.copyfileobj(input_stream, stream)
         with gzip.GzipFile(fileobj=stream, mode="wb", filename="", mtime=0) as compressor:
             compressor.write(archive)
     temporary.replace(destination)
@@ -372,7 +376,12 @@ def append_archive(base, staging, destination):
 
 def install(source, target, executable=False):
     target.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(source, target)
+    data = Path(source).read_bytes()
+    # Shell entrypoints must use Unix LF endings; a CR in #!/bin/sh makes the
+    # kernel report the script as "not found" even when it is present.
+    if executable and data.startswith(b"#!"):
+        data = data.replace(b"\r\n", b"\n")
+    target.write_bytes(data)
     target.chmod(0o755 if executable else 0o644)
 
 
@@ -397,6 +406,7 @@ def package_rootfs(base):
     images.mkdir(parents=True, exist_ok=True)
     elf_machine(WORK / "src/kvmtool/lkvm-static", 243)
     elf_machine(WORK / "out/pv-user-test", 243)
+    elf_machine(WORK / "out/pv-syscall-api", 243)
     with tempfile.TemporaryDirectory(prefix="pack-", dir=WORK) as temporary:
         staging = Path(temporary)
         install(ROOT / "conf/rootfs-overlay/etc/inittab", staging / "etc/inittab")
@@ -412,6 +422,7 @@ def package_rootfs(base):
         install(ROOT / "conf/rootfs-overlay/etc/inittab", staging / "etc/inittab")
         install(WORK / "src/kvmtool/lkvm-static", staging / "usr/bin/lkvm", True)
         install(WORK / "out/pv-user-test", staging / "usr/bin/pv-user-test", True)
+        install(WORK / "out/pv-syscall-api", staging / "usr/bin/pv-syscall-api", True)
         install(ROOT / "tests/pmp-virt/check-host.sh", staging / "usr/bin/check-virt-host", True)
         install(ROOT / "scripts/run-virt-guest.sh", staging / "usr/bin/run-virt-guest", True)
         install(ROOT / "scripts/run-virt-debian.sh", staging / "usr/bin/run-virt-debian", True)
@@ -426,7 +437,7 @@ def artifact_paths():
         "out/linux-host/arch/riscv/boot/Image", "out/linux-host/.config", "out/linux-host/System.map",
         "out/linux-guest/arch/riscv/boot/Image", "out/linux-guest/.config",
         "out/opensbi/platform/generic/firmware/fw_jump.bin", "out/opensbi/platform/generic/kconfig/.config",
-        "out/qemu/qemu-system-riscv64", "out/pv-user-test", "src/kvmtool/lkvm-static",
+        "out/qemu/qemu-system-riscv64", "out/pv-user-test", "out/pv-syscall-api", "src/kvmtool/lkvm-static",
         "generated/pmp_virt_layout.h", "images/host-rootfs.cpio.gz", "images/guest-rootfs.cpio.gz"
     )] + [ROOT / filename for filename in (
         "conf/pmp-virt/linux.config", "conf/pmp-virt/sources.json", "conf/rootfs-overlay/etc/inittab",
@@ -446,11 +457,15 @@ def manifest(base=None, cross=None, compiler_version=None):
     write_json(WORK / "manifest.json", state)
 
 
-def verify(allow_script_updates=False):
+def verify(allow_script_updates=False, allow_test_upgrade=False):
     verify_inputs()
     state = json.loads((WORK / "manifest.json").read_text())
     expected_paths = {path.relative_to(ROOT).as_posix() for path in artifact_paths()}
-    if state.get("schema") != 2 or state.get("ram_mib") != 2048 or set(state["files"]) != expected_paths:
+    recorded_paths = set(state["files"])
+    added_tests = {"tests/pmp-virt/syscall-api.c", "build/virt-kvm/out/pv-syscall-api"}
+    acceptable_paths = recorded_paths == expected_paths or (
+        allow_test_upgrade and recorded_paths == expected_paths - added_tests)
+    if state.get("schema") != 2 or state.get("ram_mib") != 2048 or not acceptable_paths:
         fail("Artifact manifest format, RAM size, or file list mismatch")
     if state["sources"] != {name: details["revision"] for name, details in SOURCES.items()}:
         fail("Artifact source revision mismatch")
@@ -484,6 +499,30 @@ def repack():
     print("Rootfs repacked. Existing kernel, firmware and QEMU binaries were preserved.")
 
 
+def compile_tests(cross):
+    for source, binary in (("user-exec.c", "pv-user-test"),
+                           ("syscall-api.c", "pv-syscall-api")):
+        run([cross + "gcc", "-O2", "-Wall", "-Wextra", "-static",
+             ROOT / "tests/pmp-virt" / source, "-o", WORK / "out" / binary])
+
+
+def rebuild_tests():
+    # Permit only the two newly introduced test paths to be absent from an
+    # older schema-2 manifest. Every existing non-script artifact must match.
+    verify(allow_script_updates=True, allow_test_upgrade=True)
+    previous = json.loads((WORK / "manifest.json").read_text())
+    base = Path(previous["base_rootfs"]["path"])
+    if digest(base) != previous["base_rootfs"]["sha256"]:
+        fail("The original base initramfs has changed; inspect before rebuilding tests")
+    validate_rootfs(base)
+    cross = cross_prefix()
+    compile_tests(cross)
+    package_rootfs(base)
+    manifest(base, cross)
+    verify()
+    print("Tests rebuilt and rootfs repacked; kernel, firmware and QEMU were preserved.")
+
+
 def build(jobs):
     verify_inputs()
     cross = cross_prefix()
@@ -506,7 +545,7 @@ def build(jobs):
          "NO_VALGRIND=1", "NO_YAML=1", f"-j{jobs}", "libfdt"])
     lkvm = verify_source("kvmtool")
     run(["make", "-C", lkvm, "ARCH=riscv", f"CROSS_COMPILE={cross}", f"LIBFDT_DIR={dtc / 'libfdt'}", f"-j{jobs}", "lkvm-static"])
-    run([cross + "gcc", "-O2", "-Wall", "-Wextra", "-static", ROOT / "tests/pmp-virt/user-exec.c", "-o", WORK / "out/pv-user-test"])
+    compile_tests(cross)
     package_rootfs(base)
     manifest(base, cross)
     verify()
@@ -548,7 +587,7 @@ def launch(dry_run):
 
 def main():
     parser = argparse.ArgumentParser(description="Isolated PMP.Virt host + ordinary KVM guest, B1 integration")
-    parser.add_argument("action", choices=("check", "prepare", "build", "repack", "verify", "run"))
+    parser.add_argument("action", choices=("check", "prepare", "build", "repack", "rebuild-tests", "verify", "run"))
     parser.add_argument("-j", "--jobs", type=int, default=4)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
@@ -558,7 +597,7 @@ def main():
         parser.error("--dry-run is only supported for run")
     private_path(WORK)
     require_checkout()
-    if args.action in ("prepare", "build", "repack", "run") and platform.system() != "Linux" and not args.dry_run:
+    if args.action in ("prepare", "build", "repack", "rebuild-tests", "run") and platform.system() != "Linux" and not args.dry_run:
         fail("Build and run these steps in the Ubuntu server terminal")
     if args.action == "check":
         check()
@@ -570,6 +609,8 @@ def main():
         build(args.jobs)
     elif args.action == "repack":
         repack()
+    elif args.action == "rebuild-tests":
+        rebuild_tests()
     elif args.action == "verify":
         verify()
     else:
