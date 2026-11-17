@@ -21,7 +21,7 @@ mkdir -p images/debian
 curl -fL --retry 3 -o images/debian/debian-13-nocloud-riscv64.qcow2 https://cloud.debian.org/images/cloud/trixie/latest/debian-13-nocloud-riscv64.qcow2
 curl -fL --retry 3 -o images/debian/SHA512SUMS https://cloud.debian.org/images/cloud/trixie/latest/SHA512SUMS
 (cd images/debian && sha512sum --ignore-missing -c SHA512SUMS)
-./toolchain/bin/qemu-img convert -p -f qcow2 -O raw images/debian/debian-13-nocloud-riscv64.qcow2 images/debian/debian-guest.raw
+qemu-img convert -p -f qcow2 -O raw images/debian/debian-13-nocloud-riscv64.qcow2 images/debian/debian-guest.raw
 fdisk -l images/debian/debian-guest.raw
 ```
 
@@ -92,7 +92,7 @@ poweroff
 Ubuntu 项目根目录：
 
 ```sh
-make -j4 rootfs-kvm
+make kvm-build KVM_JOBS=4
 make run-debian-host
 ```
 
@@ -116,7 +116,7 @@ apt-get install --no-install-recommends hello
 hello
 ```
 
-已验证 hello 输出 Hello, world!。大文件下载曾在 lkvm 用户态网络中出现超时，当前已恢复原版 kvmtool；单次原版下载成功不代表长期稳定性测试已完成。故障分析与版本范围见 [kvm-guide.md](kvm-guide.md)。
+历史基线曾运行 hello；不能将该结果视为当前分支的联网验证。大文件下载在 lkvm 用户态网络中出现过 TX watchdog 和超时。apt-get update 是更新软件包目录，不是升级整套系统；它不是离线 KVM 启动回归的前置条件。当前验证范围见 [KVM 验证](kvm-validation.md)。
 
 只需要安装二进制软件时，可备份到 /root 后将 debian.sources 中的Types: deb deb-src 改为 Types: deb，减少源码索引下载。不要关闭签名检查。本实验也使用过 Acquire::Languages=none 跳过翻译索引。
 
@@ -131,5 +131,4 @@ hello
 - 串口粘贴混乱：每次一条短命令。当前 Bash 可执行
   `bind 'set enable-bracketed-paste off'`；需要持久设置时在 /root/.inputrc
   增加 `set enable-bracketed-paste off`。这不能解决网络查询本身的等待。
-- QEMU 缺 SLIRP_4.7：使用 Makefile 启动入口，或按
-  [QEMU 网络文档](qemu-network.md) 设置项目库路径。
+- QEMU 网络依赖失败：检查构建日志及系统 slirp 开发依赖，见 [QEMU 网络文档](qemu-network.md)。

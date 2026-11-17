@@ -16,18 +16,17 @@ QEMU 配置显式启用 `--enable-slirp --enable-download`。若系统已有
 `slirp.pc`。首次构建需要可访问对应依赖下载站点；Python 构建工具、
 GLib 开发文件等 QEMU 本身的构建依赖仍需具备。
 
-启动规则设置项目内 libslirp 的运行时搜索路径，避免误加载系统旧库。
-单独检查网络后端时可执行：
+使用构建目录中的 QEMU 检查网络后端：
 
 ```sh
-LD_LIBRARY_PATH="$PWD/toolchain/lib/x86_64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
-    ./toolchain/bin/qemu-system-riscv64 -netdev help
+./build/kvm/qemu/qemu-system-riscv64 -netdev help
 ```
 
 输出应包含 `user`。`make run-debian-host` 提供 QEMU 用户态网络及
 virtio 网卡；外层执行 `run-debian` 后通过 DHCP 配置网络，再以
 lkvm 的 `mode=user` 启动 Debian。
 
-QEMU 输出保存在 `build/qemu/`，安装到 `toolchain/`。更新主 Makefile
-会触发 QEMU 重新配置，保留已有输出用于增量构建。此规则不会制作或
-修改 Debian 磁盘镜像。
+QEMU 源码位于上游子模块 `repo/qemu/`，输出保存在 `build/kvm/qemu/`。
+`make qemu-build` 重新配置并增量构建，不安装到工具链目录，也不修改
+Debian 磁盘。大文件下载曾在嵌套用户态网络中超时；磁盘快照启动检查
+和无网络 guest 回归不能证明 APT 下载已经稳定。

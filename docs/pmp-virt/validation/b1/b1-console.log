@@ -1,683 +1,0 @@
-Script started on 2026-11-04 15:45:46+08:00 [TERM="xterm-256color" TTY="/dev/pts/18" COLUMNS="82" LINES="39"]
-+ git -C /home/czy/work/riscv-spike-sdk-virt-kvm-integration merge-base --is-ancestor b47454ec6f067deb660432a2aaf1bc34f294aa65 HEAD
-+ git -C /home/czy/work/riscv-spike-sdk-virt-kvm-integration merge-base --is-ancestor 746d4f0911901bc4b5d539583841b94b61059821 HEAD
-Artifact hashes and host/firmware layout: PASS
-/home/czy/work/riscv-spike-sdk-virt-kvm-integration/build/virt-kvm/out/qemu/qemu-system-riscv64 -machine virt -accel tcg -cpu rv64,h=true,smepmp=off,x-pmp-virt=on -m 2048M -smp 1 -nographic -bios /home/czy/work/riscv-spike-sdk-virt-kvm-integration/build/virt-kvm/out/opensbi/platform/generic/firmware/fw_jump.bin -kernel /home/czy/work/riscv-spike-sdk-virt-kvm-integration/build/virt-kvm/out/linux-host/arch/riscv/boot/Image -initrd /home/czy/work/riscv-spike-sdk-virt-kvm-integration/build/virt-kvm/images/host-rootfs.cpio.gz -append 'console=ttyS0 earlycon=sbi rdinit=/sbin/init maxcpus=1'
-
-OpenSBI v1.7
-   ____                    _____ ____ _____
-  / __ \                  / ____|  _ \_   _|
- | |  | |_ __   ___ _ __ | (___ | |_) || |
- | |  | | '_ \ / _ \ '_ \ \___ \|  _ < | |
- | |__| | |_) |  __/ | | |____) | |_) || |_
-  \____/| .__/ \___|_| |_|_____/|____/_____|
-        | |
-        |_|
-
-Platform Name               : riscv-virtio,qemu
-Platform Features           : medeleg
-Platform HART Count         : 1
-Platform IPI Device         : aclint-mswi
-Platform Timer Device       : aclint-mtimer @ 10000000Hz
-Platform Console Device     : uart8250
-Platform HSM Device         : ---
-Platform PMU Device         : ---
-Platform Reboot Device      : syscon-reboot
-Platform Shutdown Device    : syscon-poweroff
-Platform Suspend Device     : ---
-Platform CPPC Device        : ---
-Firmware Base               : 0x80000000
-Firmware Size               : 317 KB
-Firmware RW Offset          : 0x40000
-Firmware RW Size            : 61 KB
-Firmware Heap Offset        : 0x46000
-Firmware Heap Size          : 37 KB (total), 2 KB (reserved), 11 KB (used), 23 KB (free)
-Firmware Scratch Size       : 4096 B (total), 1400 B (used), 2696 B (free)
-Runtime SBI Version         : 3.0
-Standard SBI Extensions     : time,rfnc,ipi,base,hsm,srst,pmu,dbcn,fwft,legacy,dbtr,sse
-Experimental SBI Extensions : pvseal
-
-Domain0 Name                : root
-Domain0 Boot HART           : 0
-Domain0 HARTs               : 0*
-Domain0 Region00            : 0x0000000000100000-0x0000000000100fff M: (I,R,W) S/U: (R,W)
-Domain0 Region01            : 0x0000000010000000-0x0000000010000fff M: (I,R,W) S/U: (R,W)
-Domain0 Region02            : 0x0000000002000000-0x000000000200ffff M: (I,R,W) S/U: ()
-Domain0 Region03            : 0x0000000080040000-0x000000008004ffff M: (R,W) S/U: ()
-Domain0 Region04            : 0x0000000080000000-0x000000008003ffff M: (R,X) S/U: ()
-Domain0 Region05            : 0x000000000c400000-0x000000000c5fffff M: (I,R,W) S/U: (R,W)
-Domain0 Region06            : 0x000000000c000000-0x000000000c3fffff M: (I,R,W) S/U: (R,W)
-Domain0 Region07            : 0x0000000000000000-0xffffffffffffffff M: () S/U: (R,W,X)
-Domain0 Next Address        : 0x0000000080200000
-Domain0 Next Arg1           : 0x0000000082200000
-Domain0 Next Mode           : S-mode
-Domain0 SysReset            : yes
-Domain0 SysSuspend          : yes
-
-Boot HART ID                : 0
-Boot HART Domain            : root
-Boot HART Priv Version      : v1.12
-Boot HART Base ISA          : rv64imafdch
-Boot HART ISA Extensions    : sstc,zicntr,zihpm,zicboz,zicbom,sdtrig,svadu
-Boot HART PMP Count         : 16
-Boot HART PMP Granularity   : 2 bits
-Boot HART PMP Address Bits  : 54
-Boot HART MHPM Info         : 16 (0x0007fff8)
-Boot HART Debug Triggers    : 2 triggers
-Boot HART MIDELEG           : 0x0000000000001666
-Boot HART MEDELEG           : 0x0000000000f4b509
-[    0.000000] Booting Linux on hartid 0
-[    0.000000] Linux version 6.17.2-pmpvirt-kvm-host-dirty (czy@kc-server-1) (riscv64-linux-gcc.br_real (Buildroot 2021.11-18033-g83947c7bb6) 15.1.0, GNU ld (GNU Binutils) 2.44) #1 SMP Wed Nov  4 14:50:56 CST 2026
-[    0.000000] random: crng init done
-[    0.000000] Machine model: riscv-virtio,qemu
-[    0.000000] SBI specification v3.0 detected
-[    0.000000] SBI implementation ID=0x1 Version=0x10007
-[    0.000000] SBI TIME extension detected
-[    0.000000] SBI IPI extension detected
-[    0.000000] SBI RFENCE extension detected
-[    0.000000] SBI SRST extension detected
-[    0.000000] earlycon: sbi0 at I/O port 0x0 (options '')
-[    0.000000] Malformed early option 'earlycon'
-[    0.000000] efi: UEFI not found.
-[    0.000000] OF: reserved mem: 0x0000000080000000..0x000000008003ffff (256 KiB) nomap non-reusable mmode_resv1@80000000
-[    0.000000] OF: reserved mem: 0x0000000080040000..0x000000008004ffff (64 KiB) nomap non-reusable mmode_resv0@80040000
-[    0.000000] Zone ranges:
-[    0.000000]   DMA32    [mem 0x0000000080000000-0x00000000ffffffff]
-[    0.000000]   Normal   empty
-[    0.000000] Movable zone start for each node
-[    0.000000] Early memory node ranges
-[    0.000000]   node   0: [mem 0x0000000080000000-0x000000008004ffff]
-[    0.000000]   node   0: [mem 0x0000000080050000-0x00000000ffffffff]
-[    0.000000] Initmem setup node 0 [mem 0x0000000080000000-0x00000000ffffffff]
-[    0.000000] riscv: base ISA extensions acdfhim
-[    0.000000] riscv: ELF capabilities acdfim
-[    0.000000] Queued spinlock using Ziccrse: enabled
-[    0.000000] percpu: Embedded 20 pages/cpu s50072 r0 d31848 u81920
-[    0.000000] Kernel command line: console=ttyS0 earlycon=sbi rdinit=/sbin/init maxcpus=1
-[    0.000000] printk: log buffer data + meta data: 131072 + 458752 = 589824 bytes
-[    0.000000] Dentry cache hash table entries: 262144 (order: 9, 2097152 bytes, linear)
-[    0.000000] Inode-cache hash table entries: 131072 (order: 8, 1048576 bytes, linear)
-[    0.000000] software IO TLB: SWIOTLB bounce buffer size adjusted to 2MB
-[    0.000000] software IO TLB: area num 1.
-[    0.000000] software IO TLB: mapped [mem 0x00000000fca00000-0x00000000fcc00000] (2MB)
-[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 524288
-[    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
-[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
-[    0.000000] rcu: Hierarchical RCU implementation.
-[    0.000000] rcu: 	RCU event tracing is enabled.
-[    0.000000] rcu: 	RCU restricting CPUs from NR_CPUS=64 to nr_cpu_ids=1.
-[    0.000000] 	Tracing variant of Tasks RCU enabled.
-[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
-[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=1
-[    0.000000] RCU Tasks Trace: Setting shift to 0 and lim to 1 rcu_task_cb_adjust=1 rcu_task_cpu_ids=1.
-[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
-[    0.000000] riscv-intc: 64 local interrupts mapped
-[    0.000000] riscv: providing IPIs using SBI IPI extension
-[    0.000000] rcu: srcu_init: Setting srcu_struct sizes based on contention.
-[    0.000000] clocksource: riscv_clocksource: mask: 0xffffffffffffffff max_cycles: 0x24e6a1710, max_idle_ns: 440795202120 ns
-[    0.000059] sched_clock: 64 bits at 10MHz, resolution 100ns, wraps every 4398046511100ns
-[    0.000159] riscv-timer: Timer interrupt in S-mode is available via sstc extension
-[    0.024678] Console: colour dummy device 80x25
-[    0.029137] Calibrating delay loop (skipped), value calculated using timer frequency.. 20.00 BogoMIPS (lpj=40000)
-[    0.029259] pid_max: default: 32768 minimum: 301
-[    0.031392] LSM: initializing lsm=capability
-[    0.032808] Mount-cache hash table entries: 4096 (order: 3, 32768 bytes, linear)
-[    0.032872] Mountpoint-cache hash table entries: 4096 (order: 3, 32768 bytes, linear)
-[    0.094510] riscv: ELF compat mode supported
-[    0.094817] ASID allocator using 16 bits (65536 entries)
-[    0.095794] rcu: Hierarchical SRCU implementation.
-[    0.095821] rcu: 	Max phase no-delay instances is 1000.
-[    0.099485] EFI services will not be available.
-[    0.100662] smp: Bringing up secondary CPUs ...
-[    0.151403] smp: Brought up 1 node, 1 CPU
-[    0.154967] Memory: 1987148K/2097152K available (15993K kernel code, 5183K rwdata, 6144K rodata, 2319K init, 434K bss, 106624K reserved, 0K cma-reserved)
-[    0.169242] devtmpfs: initialized
-[    0.216480] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
-[    0.216644] posixtimers hash table entries: 512 (order: 1, 8192 bytes, linear)
-[    0.216855] futex hash table entries: 256 (16384 bytes on 1 NUMA nodes, total 16 KiB, linear).
-[    0.220064] pinctrl core: initialized pinctrl subsystem
-[    0.261149] DMI not present or invalid.
-[    0.262963] NET: Registered PF_NETLINK/PF_ROUTE protocol family
-[    0.266488] DMA: preallocated 256 KiB GFP_KERNEL pool for atomic allocations
-[    0.266818] DMA: preallocated 256 KiB GFP_KERNEL|GFP_DMA32 pool for atomic allocations
-[    0.267012] audit: initializing netlink subsys (disabled)
-[    0.270293] thermal_sys: Registered thermal governor 'step_wise'
-[    0.270989] audit: type=2000 audit(0.096:1): state=initialized audit_enabled=0 res=1
-[    0.271553] cpuidle: using governor menu
-[    0.302053] cpu0: Ratio of byte access time to unaligned word access is 7.31, unaligned accesses are fast
-[    0.304711] suspend: HSM suspend not available
-[    0.320348] HugeTLB: allocation took 0ms with hugepage_allocation_threads=1
-[    0.320832] HugeTLB: registered 2.00 MiB page size, pre-allocated 0 pages
-[    0.320862] HugeTLB: 28 KiB vmemmap can be freed for a 2.00 MiB page
-[    0.406024] raid6: int64x8  gen()  2047 MB/s
-[    0.477970] raid6: int64x4  gen()  2689 MB/s
-[    0.547161] raid6: int64x2  gen()  2095 MB/s
-[    0.616086] raid6: int64x1  gen()  1536 MB/s
-[    0.616178] raid6: using algorithm int64x4 gen() 2689 MB/s
-[    0.684726] raid6: .... xor() 1315 MB/s, rmw enabled
-[    0.684829] raid6: using intx1 recovery algorithm
-[    0.686113] ACPI: Interpreter disabled.
-[    0.686587] iommu: Default domain type: Translated
-[    0.686617] iommu: DMA domain TLB invalidation policy: strict mode
-[    0.688667] SCSI subsystem initialized
-[    0.690545] usbcore: registered new interface driver usbfs
-[    0.690783] usbcore: registered new interface driver hub
-[    0.690904] usbcore: registered new device driver usb
-[    0.691458] mc: Linux media interface: v0.10
-[    0.691585] videodev: Linux video capture interface: v2.00
-[    0.692950] Advanced Linux Sound Architecture Driver Initialized.
-[    0.704316] vgaarb: loaded
-[    0.707177] clocksource: Switched to clocksource riscv_clocksource
-[    0.710157] pnp: PnP ACPI: disabled
-[    0.771525] NET: Registered PF_INET protocol family
-[    0.772556] IP idents hash table entries: 32768 (order: 6, 262144 bytes, linear)
-[    0.778129] tcp_listen_portaddr_hash hash table entries: 1024 (order: 2, 16384 bytes, linear)
-[    0.778196] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
-[    0.778310] TCP established hash table entries: 16384 (order: 5, 131072 bytes, linear)
-[    0.802690] TCP bind hash table entries: 16384 (order: 7, 524288 bytes, linear)
-[    0.803286] TCP: Hash tables configured (established 16384 bind 16384)
-[    0.804226] UDP hash table entries: 1024 (order: 4, 65536 bytes, linear)
-[    0.804498] UDP-Lite hash table entries: 1024 (order: 4, 65536 bytes, linear)
-[    0.805643] NET: Registered PF_UNIX/PF_LOCAL protocol family
-[    0.808290] RPC: Registered named UNIX socket transport module.
-[    0.808345] RPC: Registered udp transport module.
-[    0.808354] RPC: Registered tcp transport module.
-[    0.808361] RPC: Registered tcp-with-tls transport module.
-[    0.808369] RPC: Registered tcp NFSv4.1 backchannel transport module.
-[    0.808500] PCI: CLS 0 bytes, default 64
-[    0.812947] Unpacking initramfs...
-[    0.815929] kvm [1]: hypervisor extension available
-[    0.815975] kvm [1]: using Sv57x4 G-stage page table format
-[    0.816000] kvm [1]: VMID 14 bits available
-[    0.951734] workingset: timestamp_bits=46 max_order=19 bucket_order=0
-[    0.967105] NFS: Registering the id_resolver key type
-[    0.967389] Key type id_resolver registered
-[    0.967420] Key type id_legacy registered
-[    0.967702] nfs4filelayout_init: NFSv4 File Layout Driver Registering...
-[    0.967938] nfs4flexfilelayout_init: NFSv4 Flexfile Layout Driver Registering...
-[    0.968718] 9p: Installing v9fs 9p2000 file system support
-[    1.037991] NET: Registered PF_ALG protocol family
-[    1.038129] xor: measuring software checksum speed
-[    1.039301]    8regs           :  2926 MB/sec
-[    1.040338]    32regs          :  3266 MB/sec
-[    1.040372] xor: using function: 32regs (3266 MB/sec)
-[    1.040738] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 243)
-[    1.126898] io scheduler mq-deadline registered
-[    1.126993] io scheduler kyber registered
-[    1.127227] io scheduler bfq registered
-[    1.130635] riscv-plic: plic@c000000: mapped 95 interrupts with 1 handlers for 2 contexts.
-[    1.134692] pci-host-generic 30000000.pci: host bridge /soc/pci@30000000 ranges:
-[    1.135341] pci-host-generic 30000000.pci:       IO 0x0003000000..0x000300ffff -> 0x0000000000
-[    1.135772] pci-host-generic 30000000.pci:      MEM 0x0040000000..0x007fffffff -> 0x0040000000
-[    1.135837] pci-host-generic 30000000.pci:      MEM 0x0400000000..0x07ffffffff -> 0x0400000000
-[    1.136292] pci-host-generic 30000000.pci: Memory resource size exceeds max for 32 bits
-[    1.136665] pci-host-generic 30000000.pci: ECAM at [mem 0x30000000-0x3fffffff] for [bus 00-ff]
-[    1.137968] pci-host-generic 30000000.pci: PCI host bridge to bus 0000:00
-[    1.138183] pci_bus 0000:00: root bus resource [bus 00-ff]
-[    1.138253] pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
-[    1.138342] pci_bus 0000:00: root bus resource [mem 0x40000000-0x7fffffff]
-[    1.138353] pci_bus 0000:00: root bus resource [mem 0x400000000-0x7ffffffff]
-[    2.359387] pci 0000:00:00.0: [1b36:0008] type 00 class 0x060000 conventional PCI endpoint
-[    2.364370] pci_bus 0000:00: resource 4 [io  0x0000-0xffff]
-[    2.364404] pci_bus 0000:00: resource 5 [mem 0x40000000-0x7fffffff]
-[    2.364415] pci_bus 0000:00: resource 6 [mem 0x400000000-0x7ffffffff]
-[    3.433494] Freeing initrd memory: 21120K
-[    3.591838] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
-[    3.611332] printk: legacy console [ttyS0] disabled
-[    3.614156] 10000000.serial: ttyS0 at MMIO 0x10000000 (irq = 12, base_baud = 230400) is a 16550A
-[    3.615759] printk: legacy console [ttyS0] enabled
-[    3.663145] [drm] radeon kernel modesetting enabled.
-[    3.678932] loop: module loaded
-[    3.687369] CAN device driver interface
-[    3.687843] e1000e: Intel(R) PRO/1000 Network Driver
-[    3.688066] e1000e: Copyright(c) 1999 - 2015 Intel Corporation.
-[    3.690752] usbcore: registered new interface driver uas
-[    3.691140] usbcore: registered new interface driver usb-storage
-[    3.693432] mousedev: PS/2 mouse device common for all mice
-[    3.696671] goldfish_rtc 101000.rtc: registered as rtc0
-[    3.697369] goldfish_rtc 101000.rtc: setting system clock to 2026-11-04T07:45:54 UTC (1793778354)
-[    3.698422] i2c_dev: i2c /dev entries driver
-[    3.703756] device-mapper: ioctl: 4.50.0-ioctl (2025-04-28) initialised: dm-devel@lists.linux.dev
-[    3.705182] sdhci: Secure Digital Host Controller Interface driver
-[    3.705498] sdhci: Copyright(c) Pierre Ossman
-[    3.705771] Synopsys Designware Multimedia Card Interface Driver
-[    3.706528] sdhci-pltfm: SDHCI platform and OF driver helper
-[    3.707968] usbcore: registered new interface driver usbhid
-[    3.708247] usbhid: USB HID core driver
-[    3.713881] IPVS: Registered protocols (TCP, UDP)
-[    3.714281] IPVS: Connection hash table configured (size=4096, memory=32Kbytes)
-[    3.715801] IPVS: ipvs loaded.
-[    3.716029] IPVS: [rr] scheduler registered.
-[    3.716912] Initializing XFRM netlink socket
-[    3.717417] NET: Registered PF_INET6 protocol family
-[    3.722890] Segment Routing with IPv6
-[    3.723237] In-situ OAM (IOAM) with IPv6
-[    3.723926] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
-[    3.726109] NET: Registered PF_PACKET protocol family
-[    3.728181] Bridge firewalling registered
-[    3.728405] can: controller area network core
-[    3.728879] NET: Registered PF_CAN protocol family
-[    3.729145] can: raw protocol
-[    3.729388] can: broadcast manager protocol
-[    3.729682] can: netlink gateway - max_hops=1
-[    3.730623] 8021q: 802.1Q VLAN Support v1.8
-[    3.731483] 9pnet: Installing 9P2000 support
-[    3.731911] Key type dns_resolver registered
-[    3.772986] Btrfs loaded, zoned=no, fsverity=no
-[    3.779025] Legacy PMU implementation is available
-[    3.780242] clk: Disabling unused clocks
-[    3.780598] PM: genpd: Disabling unused power domains
-[    3.780930] ALSA device list:
-[    3.781125]   No soundcards found.
-[    3.836788] Freeing unused kernel image (initmem) memory: 2316K
-[    3.837418] PMP.Virt request: text=[0x0000000080202000,0x00000000811a041e) rodata=[0x0000000081600000,0x0000000081e00000)
-[    3.837992] PMP.Virt SBI GUARD PASS before seal DBCN READ probe=0 error=-2 buffer=unchanged
-[    3.838485] PMP.Virt SBI GUARD PASS before seal PMU probe=0 error=-2 buffer=unchanged
-[    3.838791] PMP.Virt SBI GUARD PASS before seal DBTR probe=0 error=-2 buffer=unchanged
-[    3.839113] PMP.Virt SBI GUARD PASS before seal SSE probe=0 error=-2 buffer=unchanged
-[    3.839426] PMP.Virt SBI GUARD PASS before seal MPXY probe=0 error=-2 buffer=unchanged
-[    3.839746] PMP.Virt SBI GUARD PASS before seal HSM STATUS probe=0 error=-2 buffer=unchanged
-[    3.840077] PMP.Virt SBI GUARD PASS before seal SUSP probe=0 error=-2 buffer=unchanged
-[    3.840390] PMP.Virt SBI GUARD PASS before seal FWFT probe=0 error=-2 buffer=unchanged
-[    3.840707] PMP.Virt SBI GUARD PASS before seal CPPC probe=0 error=-2 buffer=unchanged
-[    3.841486] PMP.Virt TEST PASS before HS RAM execute cause=0 pc=0 tval=0
-[    3.841818] PMP.Virt TEST PASS before text writable alias cause=0 pc=0 tval=0
-[    3.842097] PMP.Virt TEST PASS before rodata writable alias cause=0 pc=0 tval=0
-PMP.Virt SEALED: text=[0x80202000,0x811a1000) rodata=[0x81600000,0x81e00000) RAM=RWVirt image=2a2fdeac70194dca05a6b8c8066ff98b8a4cf935709ef82c6928a35eaf7788fa
-[    3.844250] PMP.Virt seal acknowledged
-[    3.844792] PMP.Virt TEST PASS after HS RAM execute cause=1 pc=ff2000000006d000 tval=ff2000000006d000
-[    3.845287] PMP.Virt TEST PASS after text writable alias cause=7 pc=ffffffff80025f64 tval=ff20000000075000
-[    3.845646] PMP.Virt TEST PASS after rodata writable alias cause=7 pc=ffffffff80025f64 tval=ff2000000007d000
-[    3.846013] PMP.Virt ACCESS SUMMARY: PASS 6/6 (HS probes only)
-[    3.846577] PMP.Virt SBI GUARD PASS after seal DBCN READ probe=0 error=-2 buffer=unchanged
-[    3.846928] PMP.Virt SBI GUARD PASS after seal PMU probe=0 error=-2 buffer=unchanged
-[    3.847230] PMP.Virt SBI GUARD PASS after seal DBTR probe=0 error=-2 buffer=unchanged
-[    3.847532] PMP.Virt SBI GUARD PASS after seal SSE probe=0 error=-2 buffer=unchanged
-[    3.847827] PMP.Virt SBI GUARD PASS after seal MPXY probe=0 error=-2 buffer=unchanged
-[    3.848126] PMP.Virt SBI GUARD PASS after seal HSM STATUS probe=0 error=-2 buffer=unchanged
-[    3.848448] PMP.Virt SBI GUARD PASS after seal SUSP probe=0 error=-2 buffer=unchanged
-[    3.848749] PMP.Virt SBI GUARD PASS after seal FWFT probe=0 error=-2 buffer=unchanged
-[    3.849052] PMP.Virt SBI GUARD PASS after seal CPPC probe=0 error=-2 buffer=unchanged
-[    3.849540] Run /sbin/init as init process
-Saving 256 bits of creditable seed for next boot
-Starting syslogd: OK
-Starting klogd: OK
-Running sysctl: OK
-Starting network: OK
-Starting crond: OK
-
-Welcome to Buildroot
-buildroot login: root
-# uname -r
-6.17.2-pmpvirt-kvm-host-dirty
-# sed -i 's/\*-pmpvirt-kvm-host+)/*-pmpvirt-kvm-host+|*-pmpvirt-kvm-host-*)/' /u
-sr/bin/check-virt-host
-# check-virt-host
-User wrote fixed instructions into RW/NX anonymous page
-PASS U execute before HS probe: value=42 VA=0x7fff86b17000
-[    8.231323] PMP.Virt USER PTE: flags=204d98eb required=b user=0 write=0
-[    8.231796] PMP.Virt TEST PASS user same-page HS RX/U0 execute cause=1 pc=ff20000000085000 tval=ff20000000085000
-[    8.232193] PMP.Virt USER frame: user_va=7fff86b17000 physical=81366000 kernel_alias=ff20000000085000 cause=1
-PASS HS denied same physical page: PA=0x81366000 cause=1
-PASS U execute after HS probe: value=42
-PMP.Virt USER SUMMARY: PASS U-success / HS-access-fault / U-success
-VIRT-KVM HOST CHECK PASS: seal, HS 6/6, SBI guard 18/18, U/HS/U, /dev/kvm
-# dmesg | grep -E 'PMP[.]Virt|[Kk][Vv][Mm]' | tail -n 80
-[    0.000000] Linux version 6.17.2-pmpvirt-kvm-host-dirty (czy@kc-server-1) (riscv64-linux-gcc.br_real (Buildroot 2021.11-18033-g83947c7bb6) 15.1.0, GNU ld (GNU Binutils) 2.44) #1 SMP Wed Nov  4 14:50:56 CST 2026
-[    0.815929] kvm [1]: hypervisor extension available
-[    0.815975] kvm [1]: using Sv57x4 G-stage page table format
-[    0.816000] kvm [1]: VMID 14 bits available
-[    3.837418] PMP.Virt request: text=[0x0000000080202000,0x00000000811a041e) rodata=[0x0000000081600000,0x0000000081e00000)
-[    3.837992] PMP.Virt SBI GUARD PASS before seal DBCN READ probe=0 error=-2 buffer=unchanged
-[    3.838485] PMP.Virt SBI GUARD PASS before seal PMU probe=0 error=-2 buffer=unchanged
-[    3.838791] PMP.Virt SBI GUARD PASS before seal DBTR probe=0 error=-2 buffer=unchanged
-[    3.839113] PMP.Virt SBI GUARD PASS before seal SSE probe=0 error=-2 buffer=unchanged
-[    3.839426] PMP.Virt SBI GUARD PASS before seal MPXY probe=0 error=-2 buffer=unchanged
-[    3.839746] PMP.Virt SBI GUARD PASS before seal HSM STATUS probe=0 error=-2 buffer=unchanged
-[    3.840077] PMP.Virt SBI GUARD PASS before seal SUSP probe=0 error=-2 buffer=unchanged
-[    3.840390] PMP.Virt SBI GUARD PASS before seal FWFT probe=0 error=-2 buffer=unchanged
-[    3.840707] PMP.Virt SBI GUARD PASS before seal CPPC probe=0 error=-2 buffer=unchanged
-[    3.841486] PMP.Virt TEST PASS before HS RAM execute cause=0 pc=0 tval=0
-[    3.841818] PMP.Virt TEST PASS before text writable alias cause=0 pc=0 tval=0
-[    3.842097] PMP.Virt TEST PASS before rodata writable alias cause=0 pc=0 tval=0
-[    3.844250] PMP.Virt seal acknowledged
-[    3.844792] PMP.Virt TEST PASS after HS RAM execute cause=1 pc=ff2000000006d000 tval=ff2000000006d000
-[    3.845287] PMP.Virt TEST PASS after text writable alias cause=7 pc=ffffffff80025f64 tval=ff20000000075000
-[    3.845646] PMP.Virt TEST PASS after rodata writable alias cause=7 pc=ffffffff80025f64 tval=ff2000000007d000
-[    3.846013] PMP.Virt ACCESS SUMMARY: PASS 6/6 (HS probes only)
-[    3.846577] PMP.Virt SBI GUARD PASS after seal DBCN READ probe=0 error=-2 buffer=unchanged
-[    3.846928] PMP.Virt SBI GUARD PASS after seal PMU probe=0 error=-2 buffer=unchanged
-[    3.847230] PMP.Virt SBI GUARD PASS after seal DBTR probe=0 error=-2 buffer=unchanged
-[    3.847532] PMP.Virt SBI GUARD PASS after seal SSE probe=0 error=-2 buffer=unchanged
-[    3.847827] PMP.Virt SBI GUARD PASS after seal MPXY probe=0 error=-2 buffer=unchanged
-[    3.848126] PMP.Virt SBI GUARD PASS after seal HSM STATUS probe=0 error=-2 buffer=unchanged
-[    3.848448] PMP.Virt SBI GUARD PASS after seal SUSP probe=0 error=-2 buffer=unchanged
-[    3.848749] PMP.Virt SBI GUARD PASS after seal FWFT probe=0 error=-2 buffer=unchanged
-[    3.849052] PMP.Virt SBI GUARD PASS after seal CPPC probe=0 error=-2 buffer=unchanged
-[    8.231323] PMP.Virt USER PTE: flags=204d98eb required=b user=0 write=0
-[    8.231796] PMP.Virt TEST PASS user same-page HS RX/U0 execute cause=1 pc=ff20000000085000 tval=ff20000000085000
-[    8.232193] PMP.Virt USER frame: user_va=7fff86b17000 physical=81366000 kernel_alias=ff20000000085000 cause=1
-# run-virt-guest
-User wrote fixed instructions into RW/NX anonymous page
-PASS U execute before HS probe: value=42 VA=0x7fff84a60000
-[   51.778497] PMP.Virt USER PTE: flags=204d30eb required=b user=0 write=0
-[   51.778822] PMP.Virt TEST PASS user same-page HS RX/U0 execute cause=1 pc=ff2000000008d000 tval=ff2000000008d000
-[   51.779196] PMP.Virt USER frame: user_va=7fff84a60000 physical=8134c000 kernel_alias=ff2000000008d000 cause=1
-PASS HS denied same physical page: PA=0x8134c000 cause=1
-PASS U execute after HS probe: value=42
-PMP.Virt USER SUMMARY: PASS U-success / HS-access-fault / U-success
-VIRT-KVM HOST CHECK PASS: seal, HS 6/6, SBI guard 18/18, U/HS/U, /dev/kvm
-  Info: # lkvm run -k /opt/guest/Image -m 256 -c 1 --name virt-kvm-b1
-[    0.000000] Booting Linux on hartid 0
-[    0.000000] Linux version 6.17.2-virt-kvm-guest (czy@kc-server-1) (riscv64-linux-gcc.br_real (Buildroot 2021.11-18033-g83947c7bb6) 15.1.0, GNU ld (GNU Binutils) 2.44) #1 SMP Wed Nov  4 14:58:57 CST 2026
-[    0.000000] Machine model: linux,dummy-virt
-[    0.000000] SBI specification v2.0 detected
-[    0.000000] SBI implementation ID=0x3 Version=0x61102
-[    0.000000] SBI TIME extension detected
-[    0.000000] SBI IPI extension detected
-[    0.000000] SBI RFENCE extension detected
-[    0.000000] SBI SRST extension detected
-[    0.000000] SBI DBCN extension detected
-[    0.000000] earlycon: sbi0 at I/O port 0x0 (options '')
-[    0.000000] printk: legacy bootconsole [sbi0] enabled
-[    0.000000] efi: UEFI not found.
-[    0.000000] OF: reserved mem: Reserved memory: No reserved-memory node in the DT
-[    0.000000] Zone ranges:
-[    0.000000]   DMA32    [mem 0x0000000080000000-0x000000008fffffff]
-[    0.000000]   Normal   empty
-[    0.000000] Movable zone start for each node
-[    0.000000] Early memory node ranges
-[    0.000000]   node   0: [mem 0x0000000080000000-0x000000008fffffff]
-[    0.000000] Initmem setup node 0 [mem 0x0000000080000000-0x000000008fffffff]
-[    0.000000] SBI HSM extension detected
-[    0.000000] Falling back to deprecated "riscv,isa"
-[    0.000000] riscv: base ISA extensions acdfim
-[    0.000000] riscv: ELF capabilities acdfim
-[    0.000000] Queued spinlock using Ziccrse: enabled
-[    0.000000] percpu: Embedded 19 pages/cpu s49048 r0 d28776 u77824
-[    0.000000] Kernel command line:  console=ttyS0 root=/dev/vda rw  console=ttyS0 earlycon=sbi rdinit=/sbin/init maxcpus=1
-[    0.000000] printk: log buffer data + meta data: 131072 + 458752 = 589824 bytes
-[    0.000000] Dentry cache hash table entries: 32768 (order: 6, 262144 bytes, linear)
-[    0.000000] Inode-cache hash table entries: 16384 (order: 5, 131072 bytes, linear)
-[    0.000000] software IO TLB: SWIOTLB bounce buffer size adjusted to 0MB
-[    0.000000] software IO TLB: area num 1.
-[    0.000000] software IO TLB: mapped [mem 0x000000008e7a0000-0x000000008e7e0000] (0MB)
-[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 65536
-[    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
-[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
-[    0.000000] rcu: Hierarchical RCU implementation.
-[    0.000000] rcu: 	RCU event tracing is enabled.
-[    0.000000] rcu: 	RCU restricting CPUs from NR_CPUS=64 to nr_cpu_ids=1.
-[    0.000000] 	Tracing variant of Tasks RCU enabled.
-[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
-[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=1
-[    0.000000] RCU Tasks Trace: Setting shift to 0 and lim to 1 rcu_task_cb_adjust=1 rcu_task_cpu_ids=1.
-[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
-[    0.000000] riscv-intc: 64 local interrupts mapped
-[    0.000000] riscv: providing IPIs using SBI IPI extension
-[    0.000000] rcu: srcu_init: Setting srcu_struct sizes based on contention.
-[    0.000000] clocksource: riscv_clocksource: mask: 0xffffffffffffffff max_cycles: 0x24e6a1710, max_idle_ns: 440795202120 ns
-[    0.000085] sched_clock: 64 bits at 10MHz, resolution 100ns, wraps every 4398046511100ns
-[    0.002828] riscv-timer: Timer interrupt in S-mode is available via sstc extension
-[    0.013879] Console: colour dummy device 80x25
-[    0.054121] Calibrating delay loop (skipped), value calculated using timer frequency.. 20.00 BogoMIPS (lpj=40000)
-[    0.057504] pid_max: default: 32768 minimum: 301
-[    0.069572] LSM: initializing lsm=capability
-[    0.075490] Mount-cache hash table entries: 512 (order: 0, 4096 bytes, linear)
-[    0.078261] Mountpoint-cache hash table entries: 512 (order: 0, 4096 bytes, linear)
-[    0.160523] riscv: ELF compat mode supported
-[    0.161272] ASID allocator using 16 bits (65536 entries)
-[    0.167268] rcu: Hierarchical SRCU implementation.
-[    0.168895] rcu: 	Max phase no-delay instances is 1000.
-[    0.177485] EFI services will not be available.
-[    0.181266] smp: Bringing up secondary CPUs ...
-[    0.183390] smp: Brought up 1 node, 1 CPU
-[    0.188470] Memory: 204860K/262144K available (15866K kernel code, 5182K rwdata, 6144K rodata, 2317K init, 426K bss, 55584K reserved, 0K cma-reserved)
-[    0.238235] devtmpfs: initialized
-[    0.259320] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
-[    0.263003] posixtimers hash table entries: 512 (order: 1, 8192 bytes, linear)
-[    0.273483] futex hash table entries: 256 (16384 bytes on 1 NUMA nodes, total 16 KiB, linear).
-[    0.279863] pinctrl core: initialized pinctrl subsystem
-[    0.295075] DMI not present or invalid.
-[    0.301513] NET: Registered PF_NETLINK/PF_ROUTE protocol family
-[    0.311347] DMA: preallocated 128 KiB GFP_KERNEL pool for atomic allocations
-[    0.316522] DMA: preallocated 128 KiB GFP_KERNEL|GFP_DMA32 pool for atomic allocations
-[    0.319494] audit: initializing netlink subsys (disabled)
-[    1.542278] thermal_sys: Registered thermal governor 'step_wise'
-[    1.543340] audit: type=2000 audit(0.204:1): state=initialized audit_enabled=0 res=1
-[    1.549041] cpuidle: using governor menu
-[    1.575583] cpu0: Ratio of byte access time to unaligned word access is 7.40, unaligned accesses are fast
-[    1.579367] suspend: SBI SUSP extension detected
-[    1.609002] HugeTLB: allocation took 0ms with hugepage_allocation_threads=1
-[    1.612191] HugeTLB: registered 2.00 MiB page size, pre-allocated 0 pages
-[    1.614462] HugeTLB: 28 KiB vmemmap can be freed for a 2.00 MiB page
-[    1.691401] raid6: int64x8  gen()  1127 MB/s
-[    1.762249] raid6: int64x4  gen()  2628 MB/s
-[    1.832772] raid6: int64x2  gen()  2028 MB/s
-[    1.903383] raid6: int64x1  gen()  1487 MB/s
-[    1.905188] raid6: using algorithm int64x4 gen() 2628 MB/s
-[    1.974106] raid6: .... xor() 1315 MB/s, rmw enabled
-[    1.975955] raid6: using intx1 recovery algorithm
-[    1.982015] ACPI: Interpreter disabled.
-[    1.984309] iommu: Default domain type: Translated
-[    1.986019] iommu: DMA domain TLB invalidation policy: strict mode
-[    1.994614] SCSI subsystem initialized
-[    2.024546] usbcore: registered new interface driver usbfs
-[    2.027367] usbcore: registered new interface driver hub
-[    2.029327] usbcore: registered new device driver usb
-[    2.033265] mc: Linux media interface: v0.10
-[    2.035637] videodev: Linux video capture interface: v2.00
-[    2.062612] Advanced Linux Sound Architecture Driver Initialized.
-[    2.083807] vgaarb: loaded
-[    2.089338] clocksource: Switched to clocksource riscv_clocksource
-[    2.104964] pnp: PnP ACPI: disabled
-[    2.165041] NET: Registered PF_INET protocol family
-[    2.169365] IP idents hash table entries: 4096 (order: 3, 32768 bytes, linear)
-[    2.246581] tcp_listen_portaddr_hash hash table entries: 256 (order: 0, 4096 bytes, linear)
-[    2.249772] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
-[    2.252280] TCP established hash table entries: 2048 (order: 2, 16384 bytes, linear)
-[    2.255376] TCP bind hash table entries: 2048 (order: 4, 65536 bytes, linear)
-[    2.259149] TCP: Hash tables configured (established 2048 bind 2048)
-[    2.263702] UDP hash table entries: 256 (order: 2, 16384 bytes, linear)
-[    2.266745] UDP-Lite hash table entries: 256 (order: 2, 16384 bytes, linear)
-[    2.271253] NET: Registered PF_UNIX/PF_LOCAL protocol family
-[    2.282610] RPC: Registered named UNIX socket transport module.
-[    2.284575] RPC: Registered udp transport module.
-[    2.286708] RPC: Registered tcp transport module.
-[    2.288242] RPC: Registered tcp-with-tls transport module.
-[    2.290228] RPC: Registered tcp NFSv4.1 backchannel transport module.
-[    2.292434] PCI: CLS 0 bytes, default 64
-[    2.306398] Unpacking initramfs...
-[    2.320654] workingset: timestamp_bits=46 max_order=16 bucket_order=0
-[    2.339536] NFS: Registering the id_resolver key type
-[    2.342019] Key type id_resolver registered
-[    2.343474] Key type id_legacy registered
-[    2.561440] nfs4filelayout_init: NFSv4 File Layout Driver Registering...
-[    2.564899] nfs4flexfilelayout_init: NFSv4 Flexfile Layout Driver Registering...
-[    2.817351] 9p: Installing v9fs 9p2000 file system support
-[    2.895730] NET: Registered PF_ALG protocol family
-[    2.897919] xor: measuring software checksum speed
-[    2.901137]    8regs           :  2032 MB/sec
-[    2.903704]    32regs          :  3218 MB/sec
-[    2.905281] xor: using function: 32regs (3218 MB/sec)
-[    2.907618] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 243)
-[    2.993354] io scheduler mq-deadline registered
-[    2.995209] io scheduler kyber registered
-[    2.997073] io scheduler bfq registered
-[    3.372975] riscv-plic: interrupt-controller@08000000: mapped 1023 interrupts with 1 handlers for 2 contexts.
-[    3.387091] pci-host-generic 30000000.pci: host bridge /smb/pci ranges:
-[    3.390312] pci-host-generic 30000000.pci:       IO 0x0000000000..0x000000ffff -> 0x0000000000
-[    3.393966] pci-host-generic 30000000.pci:      MEM 0x0040000000..0x007fffffff -> 0x0040000000
-[    3.398121] pci-host-generic 30000000.pci: ECAM at [mem 0x30000000-0x3fffffff] for [bus 00-01]
-[    3.403150] pci-host-generic 30000000.pci: PCI host bridge to bus 0000:00
-[    3.406078] pci_bus 0000:00: root bus resource [bus 00-01]
-[    3.407942] pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
-[    3.410163] pci_bus 0000:00: root bus resource [mem 0x40000000-0x7fffffff]
-[    3.416943] pci_bus 0000:00: resource 4 [io  0x0000-0xffff]
-[    3.418924] pci_bus 0000:00: resource 5 [mem 0x40000000-0x7fffffff]
-[    4.188629] Freeing initrd memory: 3592K
-[    4.207333] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
-[    4.227944] printk: legacy console [ttyS0] disabled
-[    4.234296] 10000000.U6_16550A: ttyS0 at MMIO 0x10000000 (irq = 12, base_baud = 115200) is a 16550A
-[    4.240161] printk: legacy console [ttyS0] enabled
-[    4.240161] printk: legacy console [ttyS0] enabled
-[    4.252272] printk: legacy bootconsole [sbi0] disabled
-[    4.252272] printk: legacy bootconsole [sbi0] disabled
-[    4.269844] 10001000.U6_16550A: ttyS1 at MMIO 0x10001000 (irq = 13, base_baud = 115200) is a 16550A
-[    4.293021] 10002000.U6_16550A: ttyS2 at MMIO 0x10002000 (irq = 14, base_baud = 115200) is a 16550A
-[    4.319033] 10003000.U6_16550A: ttyS3 at MMIO 0x10003000 (irq = 15, base_baud = 115200) is a 16550A
-[    4.343210] [drm] radeon kernel modesetting enabled.
-[    4.464991] loop: module loaded
-[    4.497406] CAN device driver interface
-[    4.506462] e1000e: Intel(R) PRO/1000 Network Driver
-[    4.516759] e1000e: Copyright(c) 1999 - 2015 Intel Corporation.
-[    4.536599] usbcore: registered new interface driver uas
-[    4.548127] usbcore: registered new interface driver usb-storage
-[    4.565226] mousedev: PS/2 mouse device common for all mice
-[    4.578871] i2c_dev: i2c /dev entries driver
-[    4.592372] device-mapper: ioctl: 4.50.0-ioctl (2025-04-28) initialised: dm-devel@lists.linux.dev
-[    4.613950] sdhci: Secure Digital Host Controller Interface driver
-[    4.626740] sdhci: Copyright(c) Pierre Ossman
-[    4.635921] Synopsys Designware Multimedia Card Interface Driver
-[    4.649194] sdhci-pltfm: SDHCI platform and OF driver helper
-[    4.664249] usbcore: registered new interface driver usbhid
-[    4.675695] usbhid: USB HID core driver
-[    4.696443] IPVS: Registered protocols (TCP, UDP)
-[    4.706681] IPVS: Connection hash table configured (size=4096, memory=32Kbytes)
-[    4.724167] IPVS: ipvs loaded.
-[    4.730878] IPVS: [rr] scheduler registered.
-[    4.741285] Initializing XFRM netlink socket
-[    4.750997] NET: Registered PF_INET6 protocol family
-[    4.775187] Segment Routing with IPv6
-[    4.783627] In-situ OAM (IOAM) with IPv6
-[    4.792854] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
-[    4.810280] NET: Registered PF_PACKET protocol family
-[    4.856864] Bridge firewalling registered
-[    4.865473] can: controller area network core
-[    4.879489] NET: Registered PF_CAN protocol family
-[    4.889441] can: raw protocol
-[    4.896035] can: broadcast manager protocol
-[    4.905068] can: netlink gateway - max_hops=1
-[    4.915767] 8021q: 802.1Q VLAN Support v1.8
-[    4.925975] 9pnet: Installing 9P2000 support
-[    4.935315] Key type dns_resolver registered
-[    5.096617] Btrfs loaded, zoned=no, fsverity=no
-[    5.114536] Legacy PMU implementation is available
-[    5.126590] clk: Disabling unused clocks
-[    5.135206] PM: genpd: Disabling unused power domains
-[    5.146004] ALSA device list:
-[    5.152297]   No soundcards found.
-[    5.256063] Freeing unused kernel image (initmem) memory: 2316K
-[    5.265888] Run /sbin/init as init process
-Saving 256 bits of non-creditable seed for next boot
-Starting syslogd: OK
-Starting klogd: OK
-Running sysctl: OK
-Starting network: OK
-Starting crond: OK
-VIRT-KVM GUEST BOOTED
-
-Welcome to Buildroot
-buildroot login: root
-# uname -r
-6.17.2-virt-kvm-guest
-# head -n 5 /proc/meminfo
-MemTotal:         212468 kB
-MemFree:          184000 kB
-MemAvailable:     181844 kB
-Buffers:               0 kB
-Cached:            10044 kB
-# cat /proc/uptime
-17.82 12.42
-# sleep 2
-
-# cat /p
-cat: can't open '/p': No such file or directory
-# uname -r
-6.17.2-virt-kvm-guest
-# head -n
-head: option requires an argument -- 'n'
-BusyBox v1.37.0 (2026-10-20 19:08:02 CST) multi-call binary.
-
-Usage: head [OPTIONS] [FILE]...
-
-Print first 10 lines of FILEs (or stdin).
-With more than one FILE, precede each with a filename header.
-
-	-n N[bkm]	Print first N lines
-	-n -N[bkm]	Print all except N last lines
-	-c [-]N[bkm]	Print first N bytes
-			(b:*512 k:*1024 m:*1024^2)
-	-q		Never print headers
-	-v		Always print headers
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# uname -r
-6.17.2-virt-kvm-guest
-# head -n 5 /proc/meminfo
-MemTotal:         212468 kB
-MemFree:          184832 kB
-MemAvailable:     182676 kB
-Buffers:               0 kB
-Cached:            10044 kB
-# cat /proc/uptime
-74.39 68.04
-# sleep 2
-# cat /proc/uptime
-76.49 70.03
-# echo 'GUEST USERSPACE PASS'
-GUEST USERSPACE PASS
-# poweroff
-# Stopping crond: stopped /usr/sbin/crond (pid 91)
-OK
-Stopping network: OK
-Stopping klogd: OK
-Stopping syslogd: stopped /sbin/syslogd (pid 67)
-OK
-Seeding 256 bits without crediting
-Saving 256 bits of non-creditable seed for next boot
-umount: devtmpfs busy - remounted read-only
-The system is going down NOW!
-Sent SIGTERM to all processes
-Sent SIGKILL to all processes
-Requesting system poweroff
-[  110.083511] reboot: Power down
-  Info: KVM session ended normally.
-# uname -r
-6.17.2-pmpvirt-kvm-host-dirty
-# check-virt-host
-User wrote fixed instructions into RW/NX anonymous page
-PASS U execute before HS probe: value=42 VA=0x7fffa1905000
-[  169.752207] PMP.Virt USER PTE: flags=21b2c8eb required=b user=0 write=0
-[  169.752570] PMP.Virt TEST PASS user same-page HS RX/U0 execute cause=1 pc=ff20000000095000 tval=ff20000000095000
-[  169.752971] PMP.Virt USER frame: user_va=7fffa1905000 physical=86cb2000 kernel_alias=ff20000000095000 cause=1
-PASS HS denied same physical page: PA=0x86cb2000 cause=1
-PASS U execute after HS probe: value=42
-PMP.Virt USER SUMMARY: PASS U-success / HS-access-fault / U-success
-VIRT-KVM HOST CHECK PASS: seal, HS 6/6, SBI guard 18/18, U/HS/U, /dev/kvm
-# axQEMU: Terminated
-
-Script done on 2026-11-04 15:50:44+08:00 [COMMAND_EXIT_CODE="0"]

@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "sources": {
+    "linux": {
+      "path": "repo/linux",
+      "revision": "449d48b1b99fdaa076166e200132705ac2bee711",
+      "url": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git"
+    },
+    "qemu": {
+      "path": "repo/qemu",
+      "revision": "f8b2f64e2336a28bf0d50b6ef8a7d8c013e9bcf3",
+      "url": "https://gitlab.com/qemu-project/qemu.git"
+    },
+    "opensbi": {
+      "path": "repo/opensbi",
+      "revision": "a32a91069119e7a5aa31e6bc51d5e00860be3d80",
+      "url": "https://github.com/riscv-software-src/opensbi.git"
+    },
+    "dtc": {
+      "path": "repo/dtc",
+      "revision": "f99e3af0ecb67a9085478a9b8ddbcc25aa64931d",
+      "url": "https://git.kernel.org/pub/scm/utils/dtc/dtc.git"
+    },
+    "kvmtool": {
+      "path": "repo/kvmtool",
+      "revision": "eb915c763e4b95dd4a9d32763fd449459742e053",
+      "url": "https://github.com/kvmtool/kvmtool.git"
+    }
+  }
+}

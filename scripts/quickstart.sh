@@ -1,46 +1,6 @@
 #!/bin/sh
-
-# set -x
-
-# subrepo_fetch_loop(repo, extra update option)
-subrepo_fetch_loop() {
-depth=10
-step=100
-until git submodule update --init ${2} --depth $depth --progress ${1}
-do
-	depth=$(($depth + $step))
-	echo "[v] Set depth to $depth ..."
-done
-}
-
-# fetch_repo(parent directory, repo list, extra update option)
-fetch_repo() {
-
-echo "[*] Update repositories under ${1}"
-cd ${1}
-
-for repo in ${2}
-do
-	commit=$(git submodule status | grep -oe "\([0-9a-z]*\) $repo" | grep -oe "^\([0-9a-z]*\)")
-	echo "[-] $repo -> $commit"
-	subrepo_fetch_loop $repo "${3}"
-done
-
-cd $root
-}
-
-# root="$(dirname "$(readlink -f "$0")")"
-root="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
-NJOB=4
-
-# root_repo_list=${ROOT_LIST:-"buildroot riscv-gnu-toolchain riscv-pk linux riscv-isa-sim"}
-root_repo_list=${ROOT_LIST:-"buildroot riscv-gnu-toolchain riscv-pk linux riscv-isa-sim opensbi dtc kvmtool qemu"}
-# toolchain_repo_list=${TOOLCHAIN_LIST:-"binutils gcc glibc newlib gdb"}
-toolchain_repo_list=${TOOLCHAIN_LIST:-"binutils gcc glibc newlib gdb"}
-
-fetch_repo "$root/repo" "$root_repo_list" "--jobs $NJOB"
-fetch_repo "$root/repo/riscv-gnu-toolchain" "$toolchain_repo_list" "--recursive --jobs $NJOB"
-
-echo "[*] done"
-
-
+set -eu
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+cd "$ROOT"
+# Initialize only the dependencies needed for KVM. No floating --remote update.
+exec python3 scripts/kvm.py prepare

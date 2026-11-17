@@ -261,137 +261,42 @@ SD_CARD ?= /dev/sdb
 make_sd: $(bbl)
 	sudo dd if=$(bbl).bin of=$(SD_CARD)1 bs=4096
 
-# 从源码构建 OpenSBI，并安装到启动镜像目录。
-.PHONY: opensbi-build
-opensbi-build: $(toolchain_dest)/bin/$(target_linux)-gcc
-	$(MAKE) -C "$(opensbi_srcdir)" \
-		O="$(opensbi_wrkdir)" \
-		PLATFORM=generic \
-		CROSS_COMPILE="$(toolchain_dest)/bin/$(target_linux)-" \
-		FW_TEXT_START=0x80000000 \
-		FW_JUMP_ADDR=0x80200000
-	install -D -m 0644 \
-		"$(opensbi_wrkdir)/platform/generic/firmware/fw_jump.bin" \
-		"$(KVM_IMAGE_DIR)/fw_jump.bin"
-
-# 构建并安装 QEMU，不启动虚拟机。
-.PHONY: qemu-build
-qemu-build: $(qemu)
-
-# 构建基础用户空间，并安装生成的 initramfs。
-.PHONY: rootfs-base
-rootfs-base: $(buildroot_initramfs_wrkdir)/.config
-	$(MAKE) -C "$(buildroot_srcdir)" \
-		O="$(buildroot_initramfs_wrkdir)"
-	install -D -m 0644 \
-		"$(buildroot_initramfs_wrkdir)/images/rootfs.cpio.gz" \
-		"$(topdir)/images/base/rootfs.cpio.gz"
-
-# 完整构建入口：编译内核、模块，并将模块安装到暂存目录。
-# 输出：
-#   build/linux/arch/riscv/boot/Image
-#   build/kvm-modules/lib/modules/<内核版本>/
-.PHONY: linux-build
-linux-build: $(linux_wrkdir)/.config
-	$(MAKE) -C "$(linux_srcdir)" O="$(linux_wrkdir)" \
-		CROSS_COMPILE=$(target_linux)- \
-		ARCH=riscv \
-		Image modules
-	$(MAKE) -C "$(linux_srcdir)" O="$(linux_wrkdir)" \
-		CROSS_COMPILE=$(target_linux)- \
-		ARCH=riscv \
-		INSTALL_MOD_PATH="$(wrkdir)/kvm-modules" \
-		modules_install
-
-# 构建 RISC-V 设备树库，供 kvmtool 链接使用。
-.PHONY: libfdt-build
-libfdt-build: $(toolchain_dest)/bin/$(target_linux)-gcc
-	$(MAKE) -C "$(srcdir)/dtc" \
-		CC="$(toolchain_dest)/bin/$(target_linux)-gcc" \
-		AR="$(toolchain_dest)/bin/$(target_linux)-ar" \
-		libfdt
-
-# 构建运行在外层 RISC-V Linux 中的静态版 lkvm。
-.PHONY: kvmtool-build
-kvmtool-build: libfdt-build
-	$(MAKE) -C "$(srcdir)/kvmtool" \
-		ARCH=riscv \
-		CROSS_COMPILE="$(toolchain_dest)/bin/$(target_linux)-" \
-		LIBFDT_DIR="$(srcdir)/dtc/libfdt" \
-		lkvm-static
-
-# 构建内核、模块和 lkvm，然后生成外层 rootfs 候选镜像。
-.PHONY: rootfs-kvm
-rootfs-kvm: rootfs-base linux-build kvmtool-build
-	bash "$(topdir)/scripts/pack-kvm-rootfs.sh"
-
-# 启动镜像所在目录，可在命令行覆盖：
-# make run-kvm-host KVM_IMAGE_DIR=/path/to/images
-KVM_IMAGE_DIR ?= $(topdir)/images/kvm
-# 默认使用自动构建产物，也允许命令行指定其他镜像。
-KVM_KERNEL ?= $(linux_image)
-KVM_ROOTFS ?= $(KVM_IMAGE_DIR)/rootfs-kvm-new.cpio.gz
+# Generic KVM integration. Legacy Spike targets above remain available.
+KVM_PYTHON ?= python3
+KVM_JOBS ?= 4
 DEBIAN_DISK ?= $(topdir)/images/debian/debian-guest.raw
-KVM_DISK ?=
-KVM_NET_ARGS ?=
-KVM_DISK_ARGS = -drive "file=$(KVM_DISK),format=raw,if=none,id=debian" -device virtio-blk-device,drive=debian
+KVM_SCRIPT := $(topdir)/scripts/kvm.py
 
-# 启动支持 KVM 的外层 RISC-V Linux；内层 guest 需登录后通过 lkvm 启动。
-# 依赖 QEMU 程序，并检查固件、内核和 rootfs 是否可读。
-.PHONY: run-kvm-host
-run-kvm-host: $(qemu)
-	@test -r "$(KVM_IMAGE_DIR)/fw_jump.bin"
-	@test -r "$(KVM_KERNEL)"
-	@test -r "$(KVM_ROOTFS)"
-	@if [ -n "$(KVM_DISK)" ]; then test -r "$(KVM_DISK)"; fi
-	LD_LIBRARY_PATH="$(toolchain_dest)/lib/x86_64-linux-gnu$${LD_LIBRARY_PATH:+:$$LD_LIBRARY_PATH}" "$(qemu)" \
-		-machine virt \
-		-accel tcg \
-		-cpu rv64,h=true \
-		-m 2048M \
-		-nographic \
-		-bios "$(KVM_IMAGE_DIR)/fw_jump.bin" \
-		-kernel "$(KVM_KERNEL)" \
-		-initrd "$(KVM_ROOTFS)" \
-		$(if $(KVM_DISK),$(KVM_DISK_ARGS)) \
-		$(KVM_NET_ARGS) \
-		-append "console=ttyS0 earlycon=sbi rdinit=/sbin/init"
+.PHONY: kvm-prepare kvm-build linux-build opensbi-build qemu-build libfdt-build kvmtool-build
+kvm-prepare:
+	$(KVM_PYTHON) "$(KVM_SCRIPT)" prepare
+kvm-build:
+	$(KVM_PYTHON) -u "$(KVM_SCRIPT)" build -j "$(KVM_JOBS)"
+linux-build opensbi-build qemu-build:
+	$(KVM_PYTHON) -u "$(KVM_SCRIPT)" $(patsubst %-build,%,$@) -j "$(KVM_JOBS)"
+# kvmtool-build also builds its pinned libfdt dependency.
+libfdt-build kvmtool-build:
+	$(KVM_PYTHON) -u "$(KVM_SCRIPT)" kvmtool -j "$(KVM_JOBS)"
 
-# 将 Debian 磁盘传入外层系统，登录后执行 run-debian。
-.PHONY: run-debian-host
-run-debian-host: KVM_DISK = $(DEBIAN_DISK)
-run-debian-host: KVM_NET_ARGS = -netdev user,id=hostnet -device virtio-net-device,netdev=hostnet
-run-debian-host: run-kvm-host
+.PHONY: rootfs-base rootfs-kvm kvm-pack kvm-verify run-kvm-host run-debian-host kvm-test kvm-test-static
+rootfs-base: $(buildroot_initramfs_wrkdir)/.config
+	$(MAKE) -C "$(buildroot_srcdir)" O="$(buildroot_initramfs_wrkdir)"
+	install -D -m 0644 "$(buildroot_initramfs_wrkdir)/images/rootfs.cpio.gz" "$(topdir)/images/base/rootfs.cpio.gz"
+rootfs-kvm: linux-build kvmtool-build
+	$(KVM_PYTHON) "$(KVM_SCRIPT)" pack
+kvm-pack:
+	$(KVM_PYTHON) "$(KVM_SCRIPT)" pack
+kvm-verify:
+	$(KVM_PYTHON) "$(KVM_SCRIPT)" verify
+run-kvm-host:
+	$(KVM_PYTHON) "$(KVM_SCRIPT)" run
+run-debian-host:
+	DEBIAN_DISK="$(DEBIAN_DISK)" $(KVM_PYTHON) "$(KVM_SCRIPT)" run
+kvm-test-static:
+	$(KVM_PYTHON) -B -m unittest discover -s tests/kvm -p 'test_*.py' -v
+kvm-test:
+	$(KVM_PYTHON) -u tests/kvm/run-regression.py
 
-# -------------------------------------------------
-# PMP.Virt + KVM 联合实验入口
-VIRT_PYTHON ?= python3
-VIRT_JOBS ?= 4
-VIRT_SCRIPT := $(topdir)/scripts/virt-kvm.py
-
-.PHONY: virt-build run-virt-host
-
-# 构建组件并打包 rootfs；内部会检查和准备源码
-virt-build:
-	$(VIRT_PYTHON) -u "$(VIRT_SCRIPT)" build -j "$(VIRT_JOBS)"
-
-# 校验并启动，不自动构建
-run-virt-host:
-	$(VIRT_PYTHON) "$(VIRT_SCRIPT)" run
-
-# 使用现有 DEBIAN_DISK 变量传入 Debian raw 磁盘。
-.PHONY: run-virt-debian-host
-run-virt-debian-host:
-	VIRT_DEBIAN_DISK="$(DEBIAN_DISK)" $(VIRT_PYTHON) "$(VIRT_SCRIPT)" run
-# PMP.Virt regression: static checks and a fully automatic Buildroot guest cycle.
-.PHONY: virt-check virt-prepare virt-verify virt-test-static virt-test
-virt-check:
-	$(VIRT_PYTHON) "$(VIRT_SCRIPT)" check
-virt-prepare:
-	$(VIRT_PYTHON) -u "$(VIRT_SCRIPT)" prepare
-virt-verify:
-	$(VIRT_PYTHON) "$(VIRT_SCRIPT)" verify
-virt-test-static:
-	$(VIRT_PYTHON) -B -m unittest discover -s tests/pmp-virt -p 'test_*.py' -v
-virt-test:
-	$(VIRT_PYTHON) -u tests/pmp-virt/run-regression.py
+.PHONY: kvm-test-debian
+kvm-test-debian:
+	$(KVM_PYTHON) -u tests/kvm/run-debian-smoke.py --sdk "$(topdir)" --disk "$(DEBIAN_DISK)"

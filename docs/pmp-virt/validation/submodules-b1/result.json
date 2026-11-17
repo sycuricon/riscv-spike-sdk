@@ -1,8 +1,0 @@
-{
-  "status": "PASS",
-  "error": null,
-  "scope": "protected host, diskless Buildroot guest, post-guest host probe",
-  "sdk_commit": "91da644c08ac5bef0b6b77335662136d174c0894",
-  "sdk_status": "MM .gitignore\nM  .gitmodules\n M Makefile\n M README.md\n D pmp-virt/README.md\n D pmp-virt/SHA256SUMS\n D pmp-virt/configs/linux.config\n D pmp-virt/patches/linux.patch\n D pmp-virt/patches/opensbi.patch\n D pmp-virt/patches/qemu.patch\n D pmp-virt/scripts/check-host.sh\n D pmp-virt/scripts/run-debian.sh\n D pmp-virt/scripts/run-guest.sh\n D pmp-virt/scripts/virt-kvm.py\n D pmp-virt/tests/user-exec.c\n D pmp-virt/validation/b1/README.md\n D pmp-virt/validation/b1/SHA256SUMS\n D pmp-virt/validation/b1/b1-console.log\n D pmp-virt/validation/b1/post-repack-manifest.json\n D \"pmp-virt/\\346\\226\\207\\344\\273\\266\\350\\257\\264\\346\\230\\216.txt\"\nM  repo/linux\nM  repo/opensbi\nA  repo/qemu\n M scripts/quickstart.sh\n?? conf/pmp-virt/\n?? docs/pmp-virt/\n?? scripts/run-virt-debian.sh\n?? scripts/run-virt-guest.sh\n?? scripts/virt-kvm.py\n?? tests/\n",
-  "elapsed_seconds": 12.93
-}

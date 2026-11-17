@@ -6,8 +6,7 @@
 	url = https://github.com/buildroot/buildroot.git
 [submodule "linux"]
 	path = repo/linux
-	url = https://github.com/riscv-pgtlb/linux.git
-	branch = pmp-virt-b1
+	url = https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git
 [submodule "riscv-pk"]
 	path = repo/riscv-pk
 	url = https://github.com/riscv/riscv-pk
@@ -16,8 +15,7 @@
 	url = https://github.com/riscv/riscv-isa-sim
 [submodule "opensbi"]
 	path = repo/opensbi
-	url = https://github.com/riscv-pgtlb/opensbi.git
-	branch = pmp-virt-b1
+	url = https://github.com/riscv-software-src/opensbi.git
 [submodule "repo/riscv-openocd"]
 	path = repo/riscv-openocd
 	url = https://github.com/riscv-collab/riscv-openocd.git
@@ -29,5 +27,4 @@
 	url = https://git.kernel.org/pub/scm/utils/dtc/dtc.git
 [submodule "repo/qemu"]
 	path = repo/qemu
-	url = https://github.com/riscv-pgtlb/qemu.git
-	branch = pmp-virt-b1
+	url = https://gitlab.com/qemu-project/qemu.git
