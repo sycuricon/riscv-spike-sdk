@@ -9,6 +9,11 @@ Buildroot runs on the outer host; Debian is an optional inner guest.
 See [KVM build and regression](docs/kvm-guide.md) and [Debian setup](docs/debian-guest.md).
 The original Spike instructions below are retained for reference.
 
+For KVM, start with [the KVM guide](docs/kvm-guide.md), run `make kvm-prepare`,
+provide a RISC-V Linux compiler and base initramfs, then run `make kvm-check`.
+Use `make kvm-build` to build the KVM system. The legacy `make` and recursive
+submodule instructions below are for the original Spike workflow.
+
 In the recent version of the riscv-tools and freedom-u-sdk, both of them removed the support of the spike simulator, and tutorials about running Linux on spike is using static compiled busybox, which is not suitable for real test environments. Spike is the simplest simulator of RISC-V, it has a very clear description of the instructions, you can apply your ideas and check it for a quick try. The **R**ISC-V **S**pike **S**imulator SDK wants to help people to test design with 64-bit Linux environment on Spike easily, the basic framework is based on Freedom U SDK version 1.0.
 
 This SDK will provide great convenience for the following people who:

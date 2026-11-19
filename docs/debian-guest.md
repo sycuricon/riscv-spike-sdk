@@ -17,11 +17,12 @@ latest 是变化入口，此校验值仅标识本实验保存的原始文件。�
 在 Ubuntu 项目根目录执行；若目标文件已存在，先备份，不要覆盖：
 
 ```sh
+set -e
 mkdir -p images/debian
 curl -fL --retry 3 -o images/debian/debian-13-nocloud-riscv64.qcow2 https://cloud.debian.org/images/cloud/trixie/latest/debian-13-nocloud-riscv64.qcow2
 curl -fL --retry 3 -o images/debian/SHA512SUMS https://cloud.debian.org/images/cloud/trixie/latest/SHA512SUMS
 (cd images/debian && sha512sum --ignore-missing -c SHA512SUMS)
-qemu-img convert -p -f qcow2 -O raw images/debian/debian-13-nocloud-riscv64.qcow2 images/debian/debian-guest.raw
+./build/kvm/qemu/qemu-img convert -p -f qcow2 -O raw images/debian/debian-13-nocloud-riscv64.qcow2 images/debian/debian-guest.raw
 fdisk -l images/debian/debian-guest.raw
 ```
 
@@ -103,6 +104,8 @@ run-debian
 ```
 
 run-debian 自动执行外层 DHCP，使用 lkvm mode=user。通常外层 eth0 为 10.0.2.15，内层 enp0s0 为 192.168.33.15；以实际输出为准。外层 DNS 配置须在 lkvm 启动前准备好。
+
+Debian 内先执行 date -u，与 Ubuntu 服务器的当前时间核对。维护 shell 不运行时间同步服务；如果 HTTPS 报证书尚未生效，先校正时间，不要关闭证书、APT 签名或有效期检查。网卡在维护 shell 中可能叫 eth0，正常启动后可能叫 enp0s0，以 ip -br link 为准。
 
 Debian 内检查：
 

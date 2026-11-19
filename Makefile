@@ -267,9 +267,11 @@ KVM_JOBS ?= 4
 DEBIAN_DISK ?= $(topdir)/images/debian/debian-guest.raw
 KVM_SCRIPT := $(topdir)/scripts/kvm.py
 
-.PHONY: kvm-prepare kvm-build linux-build opensbi-build qemu-build libfdt-build kvmtool-build
+.PHONY: kvm-prepare kvm-check kvm-build linux-build opensbi-build qemu-build libfdt-build kvmtool-build
 kvm-prepare:
 	$(KVM_PYTHON) "$(KVM_SCRIPT)" prepare
+kvm-check:
+	$(KVM_PYTHON) "$(KVM_SCRIPT)" check
 kvm-build:
 	$(KVM_PYTHON) -u "$(KVM_SCRIPT)" build -j "$(KVM_JOBS)"
 linux-build opensbi-build qemu-build:

@@ -4,6 +4,9 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import json
+import gzip
+import shutil
+import subprocess
 
 ROOT = Path(__file__).resolve().parents[2]
 def load(name, path):
@@ -15,6 +18,45 @@ build = load("kvm_build", ROOT / "scripts/kvm.py")
 regression = load("kvm_regression", ROOT / "tests/kvm/run-regression.py")
 
 class Checks(unittest.TestCase):
+    def test_compiler_rejects_bare_metal_target(self):
+        with patch.object(build.shutil, "which", return_value="/tool/bin/riscv64-unknown-elf-gcc"), \
+             patch.object(build, "output", return_value="riscv64-unknown-elf"):
+            with self.assertRaisesRegex(RuntimeError, "Linux compiler"):
+                build.compiler()
+
+    @unittest.skipUnless(shutil.which("cpio"), "cpio is required")
+    def test_base_rootfs_rejects_missing_files_and_wrong_architecture(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            base = root / "base.gz"
+            stage = root / "stage"
+            stage.mkdir()
+            def archive(names):
+                result = subprocess.run(["cpio", "-o", "-H", "newc", "--quiet"],
+                                        cwd=stage, input="\n".join(names).encode() + b"\n",
+                                        stdout=subprocess.PIPE, check=True)
+                with gzip.open(base, "wb") as stream:
+                    stream.write(result.stdout)
+            archive(["."])
+            with self.assertRaisesRegex(RuntimeError, "missing required"):
+                build.validate_rootfs(base)
+            names = ["sbin/init", "bin/sh", "bin/mount", "sbin/getty", "sbin/modprobe",
+                     "sbin/udhcpc", "sbin/poweroff", "etc/init.d/rcS", "etc/init.d/rcK",
+                     "bin/awk", "bin/sleep", "bin/cat", "bin/uname", "bin/busybox"]
+            for name in names:
+                path = stage / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b"wrong architecture")
+            archive(names)
+            with self.assertRaisesRegex(RuntimeError, "RV64 ELF"):
+                build.validate_rootfs(base)
+            elf = bytearray(64)
+            elf[:6] = b"\x7fELF\x02\x01"
+            elf[18:20] = (243).to_bytes(2, "little")
+            (stage / "bin/busybox").write_bytes(elf)
+            archive(names)
+            build.validate_rootfs(base)
+
     def test_transcript_requires_every_step_in_order(self):
         good = "\r\n".join(regression.STEPS) + "\r\n"
         regression.check_transcript(good)

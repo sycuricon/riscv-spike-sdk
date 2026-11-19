@@ -47,3 +47,30 @@ is not a clean-machine rebuild of those inputs. Normal Debian systemd login,
 DHCP/DNS/apt throughput, SMP/stress, physical hardware and legacy Spike startup
 were not tested here. The snapshot smoke does not resolve the previously observed
 nested-network TX timeout. This branch implements ordinary KVM integration.
+
+## Preflight and independent-directory rebuild — 2026-11-19
+
+Added compiler, static-link, source-pin and base-rootfs preflight checks. Static
+checks now pass 4/4, including rejection of bare-metal compilers and invalid
+base-rootfs inputs. `make kvm-check` and `make kvm-verify` passed.
+
+A separate checkout at `build/repro-check/checkout` rebuilt Linux, OpenSBI,
+QEMU, dtc/libfdt and lkvm without copying the original build outputs. Sources
+were prepared from local repositories at the pinned revisions. The compiler
+and base initramfs above remained explicit external inputs; this does not
+verify internet cloning or rebuilding those inputs on a clean machine.
+
+Independent-directory results:
+
+- Ordinary KVM regression: PASS, evidence under that checkout at
+  `build/kvm/logs/regression-20261119-132837-796420/`.
+- Debian snapshot smoke: PASS, evidence under that checkout at
+  `build/kvm/logs/debian-smoke-20261119-132927/`.
+
+The main checkout also passed both runtime checks:
+`build/kvm/logs/regression-20261119-132241-097236/` and
+`build/kvm/logs/debian-smoke-20261119-132339/`.
+These checks ran with the pending preflight changes before their final commit;
+result files record that worktree state. The Debian smoke scope and network
+limitations described above still apply. Build outputs, disks and runtime
+logs are local inputs/evidence and are not included in the Git branch.

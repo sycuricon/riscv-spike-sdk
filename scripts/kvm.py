@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import platform
 
 ROOT = Path(__file__).resolve().parents[1]
 WORK = ROOT / "build/kvm"
@@ -88,9 +89,62 @@ def compiler():
     if not path:
         raise RuntimeError("Set CROSS_COMPILE to a RISC-V Linux compiler prefix")
     prefix = str(Path(path).absolute())[:-3]
-    if not output([prefix + "gcc", "-dumpmachine"]).startswith("riscv64-"):
-        raise RuntimeError("A RISC-V 64-bit compiler is required")
+    target = output([prefix + "gcc", "-dumpmachine"])
+    if not target.startswith("riscv64-") or "linux" not in target:
+        raise RuntimeError("A RISC-V 64-bit Linux compiler is required (not a bare-metal compiler)")
     return prefix
+
+
+def base_rootfs():
+    base = Path(os.environ.get("BASE_ROOTFS", ROOT / "images/base/rootfs.cpio.gz")).expanduser().resolve()
+    if not base.is_file():
+        raise RuntimeError("Run make rootfs-base, or set BASE_ROOTFS to a base initramfs")
+    return base
+
+
+def validate_rootfs(base):
+    with gzip.open(base, "rb") as stream:
+        data = stream.read()
+    listing = subprocess.run(["cpio", "-it", "--quiet"], input=data,
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+    names = {name.removeprefix("./") for name in listing.stdout.decode().splitlines()}
+    required = {"sbin/init", "bin/sh", "bin/mount", "sbin/getty", "sbin/modprobe",
+                "sbin/udhcpc", "sbin/poweroff", "etc/init.d/rcS", "etc/init.d/rcK",
+                "bin/sleep", "bin/cat", "bin/uname", "bin/busybox"}
+    missing = sorted(required - names)
+    if not names.intersection({"bin/awk", "usr/bin/awk"}):
+        missing.append("awk (bin/awk or usr/bin/awk)")
+    if missing:
+        raise RuntimeError("Base rootfs is missing required files/applets: " + ", ".join(missing))
+    busybox = subprocess.run(["cpio", "-i", "--to-stdout", "--quiet", "bin/busybox", "./bin/busybox"],
+                             input=data, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True).stdout
+    if busybox[:6] != b"\x7fELF\x02\x01" or int.from_bytes(busybox[18:20], "little") != 243:
+        raise RuntimeError("Base BusyBox must be a little-endian RV64 ELF executable")
+    print(f"Base rootfs files and RV64 BusyBox: PASS ({base})", flush=True)
+
+
+def check():
+    if sys.platform != "linux" or platform.machine() not in ("x86_64", "amd64"):
+        raise RuntimeError("Use an x86-64 Linux build server")
+    if sys.version_info < (3, 10):
+        raise RuntimeError("Python 3.10 or newer is required")
+    required = ("git", "make", "gcc", "g++", "cpio", "gzip", "pkg-config", "bison", "flex", "bc", "ninja")
+    missing = [name for name in required if not shutil.which(name)]
+    if missing:
+        raise RuntimeError("Missing build commands: " + ", ".join(missing))
+    run(["pkg-config", "--exists", "glib-2.0", "pixman-1", "openssl", "libelf"])
+    cross = compiler()
+    with tempfile.TemporaryDirectory(prefix="sdk-compiler-") as temporary:
+        executable = Path(temporary) / "probe"
+        run([cross + "gcc", "-static", "-x", "c", "-", "-o", executable],
+            input=b"int main(void) { return 0; }\n")
+        data = executable.read_bytes()
+        if data[:6] != b"\x7fELF\x02\x01" or int.from_bytes(data[18:20], "little") != 243:
+            raise RuntimeError("Compiler did not produce an RV64 Linux executable")
+    for name in SOURCES:
+        source(name)
+    validate_rootfs(base_rootfs())
+    print(f"KVM build preflight: PASS; compiler={cross}", flush=True)
 
 
 def build_component(name, jobs):
@@ -165,9 +219,8 @@ def archive(base, overlays, destination):
 
 
 def pack():
-    base = Path(os.environ.get("BASE_ROOTFS", ROOT / "images/base/rootfs.cpio.gz")).resolve()
-    if not base.is_file():
-        raise RuntimeError("Run make rootfs-base, or set BASE_ROOTFS to a base initramfs")
+    base = base_rootfs()
+    validate_rootfs(base)
     WORK.mkdir(parents=True, exist_ok=True)
     guest = WORK / "images/guest-rootfs.cpio.gz"
     archive(base, [(ROOT / "tests/kvm/guest-autorun.sh", "etc/init.d/S99sdk-regression", True)], guest)
@@ -228,7 +281,7 @@ def launch(dry_run=False):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("prepare", "build", "linux", "qemu", "opensbi", "kvmtool", "pack", "verify", "run"))
+    parser.add_argument("action", choices=("prepare", "check", "build", "linux", "qemu", "opensbi", "kvmtool", "pack", "verify", "run"))
     parser.add_argument("-j", "--jobs", type=int, default=4)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
@@ -237,8 +290,11 @@ def main():
     require_checkout()
     if args.action == "prepare":
         prepare()
+    elif args.action == "check":
+        check()
     elif args.action == "build":
         prepare()
+        check()
         for name in ("linux", "opensbi", "qemu", "kvmtool"):
             build_component(name, args.jobs)
         pack()
