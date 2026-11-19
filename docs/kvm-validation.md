@@ -74,3 +74,40 @@ These checks ran with the pending preflight changes before their final commit;
 result files record that worktree state. The Debian smoke scope and network
 limitations described above still apply. Build outputs, disks and runtime
 logs are local inputs/evidence and are not included in the Git branch.
+
+## Upstream master merge validation — 2026-11-19
+
+Merged upstream master `0242f0c06d0abd00e5c4b6029011c96f847880e5`
+into the generic KVM branch based on `6fef8a2397c7a1d6a898c24637c52421fe86ec8a`.
+The Makefile retains upstream's uppercase variables, separate Linux/newlib builds,
+header installation and legacy Spike targets. Generic KVM targets use the new
+variables; the optional base-rootfs build now uses `build/buildroot-base/`.
+The legacy QEMU source path points to `repo/qemu` and keeps slirp enabled.
+
+The KVM Linux/OpenSBI/QEMU/dtc/kvmtool gitlinks still match `conf/kvm/sources.json`.
+Linux stays at 6.17.2 and OpenSBI at 1.7, both community sources. The legacy Linux
+config comes from upstream master; the KVM build uses its independent fragment.
+Buildroot, GNU toolchain, Spike and OpenOCD gitlinks take the upstream revisions.
+The legacy external-toolchain header declaration is 6.17 to match the pinned
+Linux headers; the pinned Buildroot supports this option and GCC 16.
+
+Validation after conflict resolution:
+
+- Static tests: 4/4 PASS.
+- `make kvm-check` with the external compiler/base rootfs documented above: PASS.
+- `make kvm-verify`: PASS; KVM build inputs, binaries and source pins are unchanged.
+- Makefile command previews for KVM entry points, base rootfs and legacy `all`: PASS.
+- Ordinary KVM runtime: PASS. Evidence:
+  `build/kvm/logs/regression-20261119-220921-623572/`.
+- Debian 13 snapshot smoke: PASS. Evidence:
+  `build/kvm/logs/debian-smoke-20261119-220935/`.
+
+These runtime checks reused the independently built generic KVM components in
+this checkout; they did not rebuild them or use research kernel/firmware/QEMU
+binaries. Evidence records the pre-merge HEAD and pending worktree state.
+The compiler and base initramfs remain external inputs. The new Buildroot pin,
+compiler/newlib and legacy Spike build/boot were not rebuilt or executed here;
+command previews are not build/runtime evidence. The optional base-rootfs route
+was not rebuilt. Debian used a temporary disk snapshot with `init=/bin/sh`,
+without writes to the original disk; normal systemd login/network/apt were not
+retested. This merge does not change the previously recorded scope limitations.

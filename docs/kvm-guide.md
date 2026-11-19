@@ -49,7 +49,7 @@ external toolchain selected by the pinned Buildroot configuration:
 set -e
 git submodule update --init --depth=1 -- repo/buildroot
 make rootfs-base
-sdk_cc=$(find "$PWD/rootfs/buildroot_initramfs/host/bin" -maxdepth 1 -name "*-gcc" -print -quit)
+sdk_cc=$(find "$PWD/build/buildroot-base/host/bin" -maxdepth 1 -name "*-gcc" -print -quit)
 test -n "$sdk_cc"
 export CROSS_COMPILE="${sdk_cc%gcc}"
 ```

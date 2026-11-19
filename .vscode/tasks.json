@@ -6,7 +6,7 @@
       "type": "shell",
       "command": "make",
       "args": [
-        "qemu-debug"
+        "qemu_debug"
       ],
       "dependsOn": [],
       "isBackground": true,
