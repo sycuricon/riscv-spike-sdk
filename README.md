@@ -2,6 +2,18 @@
 
 # RISC-V Spike Simulator SDK
 
+## Upstream KVM / Debian integration
+
+This branch uses pinned upstream Linux, OpenSBI, QEMU, dtc and kvmtool.
+Buildroot runs on the outer host; Debian is an optional inner guest.
+See [KVM build and regression](docs/kvm-guide.md) and [Debian setup](docs/debian-guest.md).
+The original Spike instructions below are retained for reference.
+
+For KVM, start with [the KVM guide](docs/kvm-guide.md), run `make kvm-prepare` (or `sh scripts/quickstart.sh`),
+provide a RISC-V Linux compiler and base initramfs, then run `make kvm-check`.
+Use `make kvm-build` to build the KVM system. The legacy `make` and recursive
+submodule instructions below are for the original Spike workflow.
+
 In the recent version of the riscv-tools and freedom-u-sdk, both of them removed the support of the spike simulator, and tutorials about running Linux on spike is using static compiled busybox, which is not suitable for real test environments. Spike is the simplest simulator of RISC-V, it has a very clear description of the instructions, you can apply your ideas and check it for a quick try. The **R**ISC-V **S**pike **S**imulator SDK wants to help people to test design with 64-bit Linux environment on Spike easily, the basic framework is based on Freedom U SDK version 1.0.
 
 This SDK will provide great convenience for the following people who:
@@ -15,10 +27,13 @@ This SDK follows the newest Linux Kernel, GNU toolchain and Spike, the functions
 |       Folder        |      Description       |   Version   |
 | :-----------------: | :--------------------: | :---------: |
 |    repo/buildroot    |    Build initramfs     |  2026.08.x  |
-|      repo/linux      |      Linux Kernel      |    v7.2.11    |
+|      repo/linux      |      Linux Kernel      |    v6.17.2    |
 | repo/riscv-gnu-toolchain | GNU Compiler Toolchain |  gcc 16.1.0 ld 2.47 glibc 2.44  |
 | repo/riscv-(isa-sim,pk)  | Simulator & Bootloader |    master   |
-| repo/opensbi  | Supervisor / Bootloader |    v1.9   |
+| repo/opensbi  | Supervisor / Bootloader |    v1.7   |
+| repo/qemu | Upstream QEMU submodule | v10.1.0 |
+| repo/dtc | Device tree compiler for KVM | pinned upstream |
+| repo/kvmtool | KVM guest launcher | pinned upstream |
 | repo/riscv-openocd  | JTAG Debugger |    master   |
 |         conf        |     config for SDK     |             |
 
@@ -34,10 +49,9 @@ unzip libglib2.0-dev libpixman-1-dev libncurses-dev ninja-build git rsync wget c
 ```
 ```bash
 git clone https://github.com/sycuricon/riscv-spike-sdk.git
+cd riscv-spike-sdk
 
-# For people who only want to have a try
-sh quickstart.sh
-# For people who want to develop the whole system
+# Original Spike workflow (the KVM workflow is documented above)
 git submodule update --init --recursive --progress
 
 make          # build Linux and newlib toolchains, rootfs and vmlinux
@@ -72,7 +86,7 @@ To add your test program, copy your elfs into `rootfs/` and run `make` again; ad
 
 **NOTICE**: The test program should use Linux cross-compiler to compile , instead of Newlib cross-compiler.
 
-If the benchmark you choose need some package, you can use `make buildroot_menuconfig` to reconfigure buildroot (the change is saved back to `conf/buildroot_initramfs_config`) and `make` to rebuild. 
+If the benchmark you choose need some package, you can use `make buildroot_menuconfig` to reconfigure buildroot (the change is saved back to `conf/buildroot_initramfs_config`) and `make` to rebuild.
 
 Same to linux, if you want to add driver for new devices, `make linux_menuconfig` to reconfigure and `make` to rebuild. The change only lives in `build/linux/.config`; a minimal defconfig is written to `build/linux/defconfig`, copy it to `conf/linux_defconfig` if you want to keep it. Editing `conf/linux_defconfig` regenerates `build/linux/.config` and drops changes made only in menuconfig.
 
@@ -125,8 +139,8 @@ Same to linux, if you want to add driver for new devices, `make linux_menuconfig
 		$_TARGETNAME.0 configure -work-area-phys 0x80000000 -work-area-size 10000 -work-area-backup 1
 		riscv use_bscan_tunnel 0
 	```
-	
-	This configuration has been proved validly on VC707 and FTDI2332. 
+
+	This configuration has been proved validly on VC707 and FTDI2332.
 	The vid_pid is the vendor id and product id of the FTDI device, and you can get this paramter by run `lsusb`
 	The ftdi channel is the channel id of the jtag channel while the ftdi USB device has 4 channel
 	If your connection between jtag port and debug board is correct, when you run `openocd -f conf/starship.cfg`, the following output means your openocd connects the fpga debug module successfully.

@@ -188,7 +188,7 @@ $(FW_JUMP): $(OPENSBI_SRC) $(VMLINUX_IMAGE) $(TOOLCHAIN_LINUX_GCC)
 	$(MAKE) -C $< O=$(OPENSBI_BUILD) \
 		CROSS_COMPILE=$(TOOLCHAIN)/bin/$(TOOLCHAIN_LINUX_TRIPLE)- \
 		FW_TEXT_START=0x80000000 FW_PAYLOAD_PATH=$(VMLINUX_IMAGE) \
-		PLATFORM=generic 
+		PLATFORM=generic
 
 fw_image: $(FW_JUMP)
 
@@ -203,7 +203,7 @@ SPIKE_SRC 		:= $(SRC)/riscv-isa-sim
 SPIKE_BUILD 	:= $(BUILD)/riscv-isa-sim
 SPIKE 			:= $(TOOLCHAIN)/bin/spike
 
-QEMU_SRC 		:= $(TOOLCHAIN_SRC)/qemu
+QEMU_SRC 		:= $(SRC)/qemu
 QEMU_BUILD 		:= $(BUILD)/qemu
 QEMU 			:= $(TOOLCHAIN)/bin/qemu-system-riscv64
 
@@ -221,12 +221,13 @@ $(SPIKE): $(SPIKE_SRC)
 	$(MAKE) -C $(SPIKE_BUILD)
 	$(MAKE) -C $(SPIKE_BUILD) install
 
-$(QEMU): $(QEMU_SRC)
-	rm -rf $(QEMU_BUILD)
+$(QEMU): $(QEMU_SRC) $(TOP)/Makefile $(QEMU_SRC)/subprojects/slirp.wrap
 	mkdir -p $(QEMU_BUILD)
 	mkdir -p $(dir $@)
 	cd $(QEMU_BUILD) && $</configure \
 		--disable-docs \
+		--enable-download \
+		--enable-slirp \
 		--prefix=$(TOOLCHAIN) \
 		--target-list=riscv64-linux-user,riscv64-softmmu
 	$(MAKE) -C $(QEMU_BUILD)
@@ -285,3 +286,53 @@ mrproper:
 
 .PHONY: all toolchain_linux toolchain_newlib rootfs vmlinux vmlinux_image vmlinux_strip pk bbl fw_image openocd \
 	buildroot_menuconfig linux_menuconfig spike qemu qemu_debug make_sd clean mrproper
+
+# Generic KVM integration. Legacy Spike targets above remain available.
+KVM_PYTHON ?= python3
+KVM_JOBS ?= 4
+DEBIAN_DISK ?= $(TOP)/images/debian/debian-guest.raw
+KVM_SCRIPT := $(TOP)/scripts/kvm.py
+
+.PHONY: kvm-prepare kvm-check kvm-build linux-build opensbi-build qemu-build libfdt-build kvmtool-build
+kvm-prepare:
+	$(KVM_PYTHON) "$(KVM_SCRIPT)" prepare
+kvm-check:
+	$(KVM_PYTHON) "$(KVM_SCRIPT)" check
+kvm-build:
+	$(KVM_PYTHON) -u "$(KVM_SCRIPT)" build -j "$(KVM_JOBS)"
+linux-build opensbi-build qemu-build:
+	$(KVM_PYTHON) -u "$(KVM_SCRIPT)" $(patsubst %-build,%,$@) -j "$(KVM_JOBS)"
+# kvmtool-build also builds its pinned libfdt dependency.
+libfdt-build kvmtool-build:
+	$(KVM_PYTHON) -u "$(KVM_SCRIPT)" kvmtool -j "$(KVM_JOBS)"
+
+.PHONY: rootfs-base rootfs-kvm kvm-pack kvm-verify run-kvm-host run-debian-host kvm-test kvm-test-static
+KVM_BASE_BUILD ?= $(BUILD)/buildroot-base
+KVM_BASE_DEFCONFIG ?= $(CONFIG)/buildroot_base_defconfig
+
+$(KVM_BASE_BUILD)/.config: $(KVM_BASE_DEFCONFIG)
+	mkdir -p "$(KVM_BASE_BUILD)"
+	cp "$<" "$@"
+	$(MAKE) -C "$(BUILDROOT_SRC)" O="$(KVM_BASE_BUILD)" olddefconfig
+
+rootfs-base: $(KVM_BASE_BUILD)/.config
+	$(MAKE) -C "$(BUILDROOT_SRC)" O="$(KVM_BASE_BUILD)"
+	install -D -m 0644 "$(KVM_BASE_BUILD)/images/rootfs.cpio.gz" "$(TOP)/images/base/rootfs.cpio.gz"
+rootfs-kvm: linux-build kvmtool-build
+	$(KVM_PYTHON) "$(KVM_SCRIPT)" pack
+kvm-pack:
+	$(KVM_PYTHON) "$(KVM_SCRIPT)" pack
+kvm-verify:
+	$(KVM_PYTHON) "$(KVM_SCRIPT)" verify
+run-kvm-host:
+	$(KVM_PYTHON) "$(KVM_SCRIPT)" run
+run-debian-host:
+	DEBIAN_DISK="$(DEBIAN_DISK)" $(KVM_PYTHON) "$(KVM_SCRIPT)" run
+kvm-test-static:
+	$(KVM_PYTHON) -B -m unittest discover -s tests/kvm -p 'test_*.py' -v
+kvm-test:
+	$(KVM_PYTHON) -u tests/kvm/run-regression.py
+
+.PHONY: kvm-test-debian
+kvm-test-debian:
+	$(KVM_PYTHON) -u tests/kvm/run-debian-smoke.py --sdk "$(TOP)" --disk "$(DEBIAN_DISK)"

@@ -4,6 +4,8 @@
 !.vscode/launch.json
 
 .idea/
+work/
+/work-archive/
 
 
 # toolchian
@@ -19,3 +21,10 @@ compile_commands.json
 
 # debug
 log
+
+
+# Generated boot images
+/images/
+
+__pycache__/
+*.pyc
